@@ -19,8 +19,6 @@ public class AuthenticatePayload extends Payload {
         super(payload);
     }
 
-
-
     /**
      * Read more: https://gitweb.torproject.org/torspec.git/plain/tor-spec.txt , section 4.4.1
      *

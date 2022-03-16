@@ -1,8 +1,5 @@
 import factory.CertificateFactory;
-import model.cell.AuthChallengeCellPacket;
-import model.cell.CellPacket;
-import model.cell.CertCellPacket;
-import model.cell.CertPayload;
+import model.cell.*;
 import model.cell.Certificate;
 import utils.ByteUtils;
 
@@ -71,9 +68,14 @@ public class Test {
 
         while (true) {
             //System.out.print(String.format("0x%02X ", (byte) is.read()));
-            short circID = (short) ((short) (is.read() << 8) ^ is.read());
+            short circID = ByteUtils.toShort((byte) is.read(), (byte) is.read());
             byte command = (byte) is.read();
-            short length = (short) ((short) (is.read() << 8) ^ is.read());
+
+            short length = 509;
+            if(command != NETINFO_COMMAND) {
+                //Variable sized Cells
+                length = ByteUtils.toShort((byte) is.read(), (byte) is.read());
+            }
 
             if(command == -1) { throw new IOException("Connection was closed"); }
 
@@ -84,10 +86,11 @@ public class Test {
                 case VERSION_COMMAND -> VERSION_RESPONSE = new CellPacket(circID, command, payload);
                 case CERTS_COMMAND -> CERTS_RESPONSE = new CertCellPacket(circID, command, payload);
                 case AUTH_CHALLENGE_COMMAND -> AUTH_CHALLENGE = new AuthChallengeCellPacket(circID, command, payload);
-                case NETINFO_COMMAND -> NETINFO_RESPONSE = new CellPacket(circID, command, payload);
+                case NETINFO_COMMAND -> NETINFO_RESPONSE = new NetInfoCellPacket(circID, command, payload);
             }
 
             System.out.println("Received command: " + ByteUtils.toString(command));
+            System.out.println(NETINFO_RESPONSE);
 
             if(VERSION_RESPONSE != null && CERTS_RESPONSE != null && AUTH_CHALLENGE != null && NETINFO_RESPONSE == null) {
                 Certificate identity = CertificateFactory.getInstance().generateCertificate((byte) 0x03);

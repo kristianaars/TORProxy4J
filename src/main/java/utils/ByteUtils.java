@@ -38,4 +38,13 @@ public class ByteUtils {
     public static String toString(byte b) {
         return String.format("0x%02X ", b);
     }
+
+    public static int toInt(byte[] bytes) {
+        int r = 0;
+        for(int i = 0; i < bytes.length && i < 4; i++) {
+            r <<= 8;
+            r |= (int)bytes[i] & 0xFF;
+        }
+        return r;
+    }
 }
