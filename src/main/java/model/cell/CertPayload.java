@@ -2,8 +2,11 @@ package model.cell;
 
 import utils.ByteUtils;
 
+import java.nio.ByteBuffer;
+
 public class CertPayload extends Payload {
 
+    public final static int PAYLOAD_HEADER_LENGTH = 0x01;
     public final static int CERTIFICATE_HEADER_LENGTH = 0x03;
 
     public CertPayload(byte[] payload) {
@@ -43,6 +46,23 @@ public class CertPayload extends Payload {
         }
 
         return new Certificate(certType, certBuffer);
+    }
+
+    public static CertPayload createPayloadFrom(Certificate[] certificates) {
+        int certificateCount = certificates.length;
+        int bufferLength = PAYLOAD_HEADER_LENGTH;
+        for(Certificate c : certificates) {bufferLength += (CERTIFICATE_HEADER_LENGTH + c.getLength()); }
+
+        ByteBuffer pumpBuffer = ByteBuffer.allocate(bufferLength);
+        pumpBuffer.put((byte) certificateCount);
+
+        for(Certificate c : certificates) {
+            pumpBuffer.put(c.getType());
+            pumpBuffer.putShort((short) c.getLength());
+            pumpBuffer.put(c.getCertificate());
+        }
+
+        return new CertPayload(pumpBuffer.array());
     }
 
 }

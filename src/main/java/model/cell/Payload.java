@@ -19,11 +19,15 @@ public class Payload {
     @Override
     public String toString() {
         return "Payload{" +
-                "payload=[" + ByteUtils.toString(payload)+"]" +
+                "payload=" + ByteUtils.toString(payload) +
                 '}';
     }
 
     private byte[] getPayload() {
         return payload;
+    }
+
+    public int getLength() {
+        return payload.length;
     }
 }

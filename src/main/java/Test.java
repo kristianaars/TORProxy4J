@@ -1,7 +1,9 @@
+import factory.CertificateFactory;
 import model.cell.AuthChallengeCellPacket;
 import model.cell.CellPacket;
 import model.cell.CertCellPacket;
 import model.cell.CertPayload;
+import model.cell.Certificate;
 import utils.ByteUtils;
 
 import javax.net.ssl.*;
@@ -49,35 +51,31 @@ public class Test {
         pumpBuffer.putShort((short) 0x0003);
         System.out.println(Arrays.toString(pumpBuffer.array()));
         os.write(pumpBuffer.array());
-        os.flush();
+        //os.flush();
 
         //InputStreamReader ir = new InputStreamReader(socket.getInputStream());
         InputStream is = socket.getInputStream();
-        for(byte b : pumpBuffer.array()) {
-            System.out.printf("0x%02X ", b);
-        }
 
         //Socket socket = new Socket("45.66.33.45", 443);
         System.out.println("\nConnected");
 
-        byte b1 = (byte) 0xFF;
-        byte b2 = (byte) 0x0F;
-        short circID1 = (short) ((short) (b1 << 8) ^ b2);
-        System.out.printf("0x%02X %n", circID1);
-
         CellPacket VERSION_RESPONSE = null;
         CertCellPacket CERTS_RESPONSE = null;
         AuthChallengeCellPacket AUTH_CHALLENGE = null;
+        CellPacket NETINFO_RESPONSE = null;
 
         final byte VERSION_COMMAND = 0x07;
         final byte CERTS_COMMAND = (byte) 0x81;
         final byte AUTH_CHALLENGE_COMMAND = (byte) 0x82;
+        final byte NETINFO_COMMAND = (byte) 0x08;
 
         while (true) {
             //System.out.print(String.format("0x%02X ", (byte) is.read()));
             short circID = (short) ((short) (is.read() << 8) ^ is.read());
             byte command = (byte) is.read();
             short length = (short) ((short) (is.read() << 8) ^ is.read());
+
+            if(command == -1) { throw new IOException("Connection was closed"); }
 
             byte[] payload = new byte[ByteUtils.toUnsigned(length)];
             for(int i = 0; i < payload.length; i++) { payload[i] = (byte) is.read(); }
@@ -86,13 +84,17 @@ public class Test {
                 case VERSION_COMMAND -> VERSION_RESPONSE = new CellPacket(circID, command, payload);
                 case CERTS_COMMAND -> CERTS_RESPONSE = new CertCellPacket(circID, command, payload);
                 case AUTH_CHALLENGE_COMMAND -> AUTH_CHALLENGE = new AuthChallengeCellPacket(circID, command, payload);
+                case NETINFO_COMMAND -> NETINFO_RESPONSE = new CellPacket(circID, command, payload);
             }
 
-            if(VERSION_RESPONSE != null && CERTS_RESPONSE != null && AUTH_CHALLENGE != null) {
-                //System.out.println(ByteUtils.toString(CERTS_RESPONSE.getCertificate()));
-                System.out.println(CERTS_RESPONSE);
-                System.out.println(AUTH_CHALLENGE);
+            System.out.println("Received command: " + ByteUtils.toString(command));
 
+            if(VERSION_RESPONSE != null && CERTS_RESPONSE != null && AUTH_CHALLENGE != null && NETINFO_RESPONSE == null) {
+                Certificate identity = CertificateFactory.getInstance().generateCertificate((byte) 0x03);
+                CertCellPacket CERT_ANS = new CertCellPacket((short) 0x00, (byte) 0x81, new Certificate[]{identity});
+
+                System.out.println("Sending " + ByteUtils.toString(CERT_ANS.generateRawCellPacket()));
+                os.write(CERT_ANS.generateRawCellPacket());
             }
         }
     }

@@ -1,18 +1,18 @@
 package model.cell;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 public class CellPacket {
 
+    private final static int DEFAULT_HEADER_SIZE = 0x05;
+
     private final short CIRC_ID;
     private final byte COMMAND;
-    private final int LENGTH;
     protected Payload PAYLOAD;
 
     public CellPacket(short CIRC_ID, byte COMMAND, byte[] PAYLOAD) {
         this.CIRC_ID = CIRC_ID;
         this.COMMAND = COMMAND;
-        this.LENGTH = PAYLOAD.length;
         this.PAYLOAD = new Payload(PAYLOAD);
     }
 
@@ -24,12 +24,19 @@ public class CellPacket {
         return COMMAND;
     }
 
-    public int getLENGTH() {
-        return LENGTH;
+    public Payload getPayload() {
+        return PAYLOAD;
     }
 
-    public Payload getPAYLOAD() {
-        return PAYLOAD;
+    public byte[] generateRawCellPacket() {
+        int packetSize = DEFAULT_HEADER_SIZE + getPayload().payload.length;
+
+        ByteBuffer pumpBuffer = ByteBuffer.allocate(packetSize);
+        pumpBuffer.putShort(getCIRC_ID());
+        pumpBuffer.put(getCOMMAND());
+        pumpBuffer.putShort((short) (getPayload().getLength() & 0xFFFF));
+        pumpBuffer.put(getPayload().payload);
+        return pumpBuffer.array();
     }
 
     @Override
@@ -37,8 +44,8 @@ public class CellPacket {
         return "CellPacket{" +
                 "CIRC_ID=" + String.format("0x%02X", CIRC_ID) +
                 ", COMMAND=" + String.format("0x%02X", COMMAND) +
-                ", LENGTH=" + LENGTH +
-                ", PAYLOAD=" + PAYLOAD+
+                ", LENGTH=" + PAYLOAD.getLength() +
+                //", PAYLOAD=" + PAYLOAD+
                 '}';
     }
 }

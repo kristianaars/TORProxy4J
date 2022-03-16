@@ -1,12 +1,17 @@
 package model.cell;
 
-import utils.ByteUtils;
-
 import java.util.Arrays;
 
 public class CertCellPacket extends CellPacket {
 
     private Certificate[] certificates;
+
+    public CertCellPacket(short CIRC_ID, byte COMMAND, Certificate[] certificates) {
+        super(CIRC_ID, COMMAND, new byte[0]);
+
+        PAYLOAD = CertPayload.createPayloadFrom(certificates);
+        this.certificates = certificates;
+    }
 
     public CertCellPacket(short CIRC_ID, byte COMMAND, byte[] payload) {
         super(CIRC_ID, COMMAND, payload);

@@ -1,6 +1,7 @@
 package utils;
 
 public class ByteUtils {
+
     /**
      * Returns a number of type short represented by the provided bytes.
      *
