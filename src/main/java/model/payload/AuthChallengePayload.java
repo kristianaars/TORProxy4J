@@ -1,5 +1,6 @@
-package model.cell;
+package model.payload;
 
+import model.AuthChallenge;
 import utils.ByteUtils;
 
 public class AuthChallengePayload extends Payload {

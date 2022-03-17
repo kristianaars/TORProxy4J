@@ -1,5 +1,6 @@
-package model.cell;
+package model.payload;
 
+import model.Certificate;
 import utils.ByteUtils;
 
 import java.nio.ByteBuffer;

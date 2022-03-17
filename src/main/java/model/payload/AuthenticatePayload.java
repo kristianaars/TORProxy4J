@@ -1,4 +1,4 @@
-package model.cell;
+package model.payload;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

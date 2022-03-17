@@ -1,5 +1,7 @@
 package model.cell;
 
+import model.payload.Payload;
+
 import java.nio.ByteBuffer;
 
 public class CellPacket {
@@ -29,13 +31,17 @@ public class CellPacket {
     }
 
     public byte[] generateRawCellPacket() {
-        int packetSize = DEFAULT_HEADER_SIZE + getPayload().payload.length;
+        int packetSize = DEFAULT_HEADER_SIZE + getPayload().getPayload().length;
 
         ByteBuffer pumpBuffer = ByteBuffer.allocate(packetSize);
         pumpBuffer.putShort(getCIRC_ID());
         pumpBuffer.put(getCOMMAND());
-        pumpBuffer.putShort((short) (getPayload().getLength() & 0xFFFF));
-        pumpBuffer.put(getPayload().payload);
+
+        if(getCOMMAND() != (byte) 0x08) {
+            pumpBuffer.putShort((short) (getPayload().getLength() & 0xFFFF));
+        }
+
+        pumpBuffer.put(getPayload().getPayload());
         return pumpBuffer.array();
     }
 

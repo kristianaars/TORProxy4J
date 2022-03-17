@@ -1,5 +1,8 @@
 package model.cell;
 
+import model.Certificate;
+import model.payload.CertPayload;
+
 import java.util.Arrays;
 
 public class CertCellPacket extends CellPacket {
@@ -26,6 +29,11 @@ public class CertCellPacket extends CellPacket {
 
     public Certificate[] getCertificates() {
         return Arrays.copyOf(certificates, certificates.length);
+    }
+
+    public Certificate getCertificate(byte type) {
+        for(Certificate c : certificates) { if(c.getType() == type) { return c;}}
+        return null;
     }
 
     public CertPayload getPayload() {

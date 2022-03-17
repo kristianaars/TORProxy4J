@@ -1,5 +1,8 @@
 package model.cell;
 
+import model.AuthChallenge;
+import model.payload.AuthChallengePayload;
+
 public class AuthChallengeCellPacket extends CellPacket{
 
     private AuthChallenge authChallenge;

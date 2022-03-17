@@ -1,7 +1,6 @@
 package factory;
 
-import model.cell.Certificate;
-import model.cell.Payload;
+import model.Certificate;
 
 import java.security.Key;
 import java.security.KeyPair;

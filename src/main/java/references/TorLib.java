@@ -87,7 +87,7 @@ public class TorLib {
 	 * @param args Command line arguments for test main method.
 	 */
 	public static void main(String[] args) {
-		String req = "-r";
+		String req = "-w";
 		String targetHostname = "tor.eff.org";
 		String targetDir = "index.html";
 		int targetPort = 80;
@@ -229,7 +229,7 @@ public class TorLib {
 		int targetPort = 0; // we dont need a port to resolve
 
 		try {
-			Socket s = TorSocketPre(targetHostname,targetPort,TOR_RESOLVE);
+			Socket s = TorSocketPre(targetHostname, targetPort,TOR_RESOLVE);
 			DataInputStream is = new DataInputStream(s.getInputStream());
 
 			byte version = is.readByte();

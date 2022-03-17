@@ -1,4 +1,4 @@
-package model.cell;
+package model.payload;
 
 import utils.ByteUtils;
 
@@ -6,7 +6,9 @@ import java.util.Arrays;
 
 public class Payload {
 
+    protected boolean isFixedSize;
     protected byte[] payload;
+    public static final int FIXED_PAYLOAD_SIZE = 509;
 
     public Payload(Payload payload) {
         this.payload = Arrays.copyOf(payload.getPayload(), payload.getPayload().length);
@@ -23,7 +25,7 @@ public class Payload {
                 '}';
     }
 
-    private byte[] getPayload() {
+    public byte[] getPayload() {
         return payload;
     }
 
