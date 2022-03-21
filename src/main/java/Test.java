@@ -6,6 +6,7 @@ import model.*;
 import model.Certificate;
 import model.cell.*;
 import utils.ByteUtils;
+import utils.CertificateUtils;
 
 import javax.net.ssl.*;
 import java.io.DataOutputStream;
@@ -16,13 +17,14 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECPoint;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class Test {
 
-
-
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyManagementException, CertificateEncodingException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, PayloadSizeNotFixedException, InvalidKeyException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyManagementException, CertificateEncodingException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, PayloadSizeNotFixedException, InvalidKeyException, InvalidKeySpecException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         TLSTrustManager tm = new TLSTrustManager();
@@ -117,7 +119,9 @@ public class Test {
                     Certificate TLSLinkCertificate = new Certificate(CERT_TYPE_5_TLS_ED25519_LINK, tm.getTLSHandshakeServerCertificate().getEncoded());
 
                     TorDiffieHellman dh = new TorDiffieHellman();
-                    System.out.println(dh.getCommonSecret(new BigInteger(1, relay.getOnionKey().getEncoded())));
+
+
+                    //System.out.println(dh.getCommonSecret(wx));
 
 
                     break;
