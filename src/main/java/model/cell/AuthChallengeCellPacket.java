@@ -7,7 +7,7 @@ public class AuthChallengeCellPacket extends CellPacket{
 
     private AuthChallenge authChallenge;
 
-    public AuthChallengeCellPacket(short CIRC_ID, byte[] PAYLOAD) {
+    public AuthChallengeCellPacket(int CIRC_ID, byte[] PAYLOAD) {
         super(CIRC_ID, CellPacket.AUTH_CHALLENGE_COMMAND, PAYLOAD);
 
         this.PAYLOAD = new AuthChallengePayload(this.PAYLOAD);

@@ -1,20 +1,17 @@
 package crypto;
 
 import model.cell.Create2CellPacket;
+import model.cell.Created2CellPacket;
 import model.payload.Create2Payload;
 import model.relay.TorRelay;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 
 import java.nio.ByteBuffer;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 
 public class NTorHandshake {
 
     private static final int HANDSHAKE_SIZE = 84;
-    private static final int KEY_SIZE = 256;
 
     private final Curve25519KeyPair keyPair;
     private byte[] handshakeData;
@@ -31,11 +28,15 @@ public class NTorHandshake {
         return cipher.generateKeyPair();
     }
 
-    public Create2CellPacket getClientInitHandshake(short CIRC_ID) {
-        byte[] handshakeData = createOnionSkin();
+    public Create2CellPacket getClientInitHandshake(int CIRC_ID) {
+        byte[] handshakeData = createClientHandshakeRequest();
         Create2Payload payload = Create2Payload.generateCreate2Payload(Create2Payload.HTYPE_NTOR, handshakeData);
 
         return new Create2CellPacket(CIRC_ID, payload);
+    }
+
+    public void provideServerHandshakeResponse(Created2CellPacket packet) {
+
     }
 
     /**
@@ -54,7 +55,7 @@ public class NTorHandshake {
      *
      * @return NTAP Onion Skin
      */
-    private byte[] createOnionSkin() {
+    private byte[] createClientHandshakeRequest() {
         byte[] NODE_ID = onionRouter.getDescriptor().IDENTITY_FINGERPRINT;
         byte[] KEY_ID = onionRouter.getDescriptor().NTOR_ONION_KEY;
         byte[] CLIENT_PK = keyPair.getPublicKey();

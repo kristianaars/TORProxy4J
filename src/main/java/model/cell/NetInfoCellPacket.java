@@ -8,15 +8,15 @@ public class NetInfoCellPacket extends CellPacket {
 
     private NetInfo netInfo;
 
-    public NetInfoCellPacket(short CIRC_ID, byte[] payload) throws PayloadSizeNotFixedException {
+    public NetInfoCellPacket(int CIRC_ID, byte[] payload) throws PayloadSizeNotFixedException {
         super(CIRC_ID, CellPacket.NETINFO_COMMAND, payload);
 
         PAYLOAD = new NetInfoPayload(payload);
         initiateNetInfoRead();
     }
 
-    public NetInfoCellPacket(short circ_id, byte command, NetInfo netInfo) {
-        super(circ_id, command, new byte[0]);
+    public NetInfoCellPacket(short circ_id, NetInfo netInfo) {
+        super(circ_id, CellPacket.NETINFO_COMMAND, new byte[0]);
 
         PAYLOAD = NetInfoPayload.createPayloadFrom(netInfo);
         this.netInfo = netInfo;

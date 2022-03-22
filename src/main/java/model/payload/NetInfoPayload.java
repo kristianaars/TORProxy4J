@@ -15,7 +15,7 @@ public class NetInfoPayload extends Payload {
 
         this.isFixedSize = true;
         if(payload.length != FIXED_PAYLOAD_SIZE) {
-            throw new PayloadSizeNotFixedException(FIXED_PAYLOAD_SIZE);
+           // throw new PayloadSizeNotFixedException(FIXED_PAYLOAD_SIZE);
         }
     }
 

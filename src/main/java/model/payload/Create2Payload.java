@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 
 public class Create2Payload extends Payload {
 
+    //TODO: Denne bør flyttes til et mer logisk sted...
     public final static short HTYPE_NTOR = 0x0002;
 
     public Create2Payload(Payload payload) {

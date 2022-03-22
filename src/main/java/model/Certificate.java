@@ -32,7 +32,7 @@ public class Certificate {
     public String toString() {
         return "Certificate{" +
                 "type=" + type +
-                ", certificate=[" + ByteUtils.toString(certificate) + "]" +
+                //", certificate=[" + ByteUtils.toString(certificate) + "]" +
                 ", length=" + length +
                 '}';
     }

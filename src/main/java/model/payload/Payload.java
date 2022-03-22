@@ -25,6 +25,10 @@ public class Payload {
                 '}';
     }
 
+    public boolean isFixedSize() {
+        return isFixedSize;
+    }
+
     public byte[] getPayload() {
         return payload;
     }

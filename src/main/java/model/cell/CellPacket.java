@@ -11,20 +11,23 @@ public class CellPacket {
     public static final byte AUTH_CHALLENGE_COMMAND = (byte) 0x82;
     public static final byte NETINFO_COMMAND = (byte) 0x08;
     public static final byte CREATE2_COMMAND = (byte) 0x0A;
+    public static final byte CREATED2_COMMAND = (byte) 0x0B;
+    public static final byte DESTROY_COMMAND = (byte) 0x04;
 
-    private final static int DEFAULT_HEADER_SIZE = 0x05;
+    private final static int FIXED_CELL_PACKET_SIZE = 514;
+    private final static int VARIABLE_HEADER_SIZE = 0x07;
 
-    private final short CIRC_ID;
+    private final int CIRC_ID;
     private final byte COMMAND;
     protected Payload PAYLOAD;
 
-    public CellPacket(short CIRC_ID, byte COMMAND, byte[] PAYLOAD) {
+    public CellPacket(int CIRC_ID, byte COMMAND, byte[] PAYLOAD) {
         this.CIRC_ID = CIRC_ID;
         this.COMMAND = COMMAND;
         this.PAYLOAD = new Payload(PAYLOAD);
     }
 
-    public short getCIRC_ID() {
+    public int getCIRC_ID() {
         return CIRC_ID;
     }
 
@@ -37,13 +40,16 @@ public class CellPacket {
     }
 
     public byte[] generateRawCellPacket() {
-        int packetSize = DEFAULT_HEADER_SIZE + getPayload().getPayload().length;
+        boolean fixedSize = getPayload().isFixedSize();
+        int packetSize = getExpectedPacketSize();
 
         ByteBuffer pumpBuffer = ByteBuffer.allocate(packetSize);
-        pumpBuffer.putShort(getCIRC_ID());
+        pumpBuffer.putInt(getCIRC_ID());
         pumpBuffer.put(getCOMMAND());
 
-        if(getCOMMAND() != (byte) 0x08) {
+        System.out.println(fixedSize);
+
+        if(!fixedSize) {
             pumpBuffer.putShort((short) (getPayload().getLength() & 0xFFFF));
         }
 
@@ -51,13 +57,27 @@ public class CellPacket {
         return pumpBuffer.array();
     }
 
+    public int getExpectedPacketSize() {
+        boolean fixedSize = getPayload().isFixedSize();
+        if(fixedSize) {
+            return FIXED_CELL_PACKET_SIZE;
+        } else {
+            return VARIABLE_HEADER_SIZE + getPayload().getLength();
+        }
+    }
+
+    public static boolean isFixedPacketCell(byte command) {
+        return command == NETINFO_COMMAND || command == CREATE2_COMMAND || command == CREATED2_COMMAND || command == DESTROY_COMMAND;
+    }
+
     @Override
     public String toString() {
         return "CellPacket{" +
-                "CIRC_ID=" + String.format("0x%02X", CIRC_ID) +
+                "CIRC_ID=" + String.format("0x%04X", CIRC_ID) +
+                ", TOTAL_SIZE=" + getExpectedPacketSize() +
                 ", COMMAND=" + String.format("0x%02X", COMMAND) +
                 ", LENGTH=" + PAYLOAD.getLength() +
-                //", PAYLOAD=" + PAYLOAD+
+                ", PAYLOAD=" + PAYLOAD+
                 '}';
     }
 }
