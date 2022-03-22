@@ -31,6 +31,13 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <version>1.70</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>curve25519-java</artifactId>
+            <version>0.5.0</version>
+        </dependency>
+
     </dependencies>
 
 </project>

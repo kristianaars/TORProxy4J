@@ -1,30 +1,32 @@
+import crypto.NTorHandshake;
 import crypto.TorDiffieHellman;
+import exceptions.DescriptorFieldNotFoundException;
 import exceptions.PayloadSizeNotFixedException;
 import factory.CertificateFactory;
+import factory.CircIDFactory;
 import managers.TLSTrustManager;
 import model.*;
 import model.Certificate;
 import model.cell.*;
+import model.relay.RelayDescriptor;
+import model.relay.TorRelay;
+import model.relay.TorRelays;
 import utils.ByteUtils;
-import utils.CertificateUtils;
 
 import javax.net.ssl.*;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class Test {
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyManagementException, CertificateEncodingException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, PayloadSizeNotFixedException, InvalidKeyException, InvalidKeySpecException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyManagementException, CertificateEncodingException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, PayloadSizeNotFixedException, InvalidKeyException, InvalidKeySpecException, DescriptorFieldNotFoundException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         TLSTrustManager tm = new TLSTrustManager();
@@ -36,6 +38,8 @@ public class Test {
         InetAddress ownAddress = InetAddress.getByName("188.113.68.128");
 
         SSLSocket socket = (SSLSocket) ctx.getSocketFactory().createSocket(relay.getAddressAsString(), relay.getPort());
+
+        System.out.println(relay);
 
         socket.startHandshake();
 
@@ -67,6 +71,8 @@ public class Test {
         final byte CERT_TYPE_2_RSA1024_IDENTITY = 0x02;
         final byte CERT_TYPE_5_TLS_ED25519_LINK = 0x05;
 
+        final short GLOBAL_CIRC_ID = CircIDFactory.getInstance().getCircID();
+
         while (true) {
             short circID = ByteUtils.toShort((byte) is.read(), (byte) is.read());
             byte command = (byte) is.read();
@@ -90,17 +96,17 @@ public class Test {
                 }
 
                 case CERTS_COMMAND: {
-                    CERTS_RESPONSE = new CertCellPacket(circID, command, payload);
+                    CERTS_RESPONSE = new CertCellPacket(circID, payload);
                     System.out.println("Received " + CERTS_RESPONSE);
                     break;
                 }
 
                 case AUTH_CHALLENGE_COMMAND: {
-                    AUTH_CHALLENGE = new AuthChallengeCellPacket(circID, command, payload);
+                    AUTH_CHALLENGE = new AuthChallengeCellPacket(circID, payload);
                     System.out.println("Received " + AUTH_CHALLENGE);
 
                     Certificate identity = CertificateFactory.getInstance().generateCertificate((byte) 0x03);
-                    CertCellPacket CERT_ANS = new CertCellPacket((short) 0x00, CERTS_COMMAND, new Certificate[]{identity});
+                    CertCellPacket CERT_ANS = new CertCellPacket((short) 0x00, new Certificate[]{identity});
 
                     NetInfoAddress extAddr = new NetInfoAddress((byte) 0x04, remoteAddress.getAddress());
                     NetInfoAddress[] ownAddr = new NetInfoAddress[] { new NetInfoAddress( (byte) 0x04, ownAddress.getAddress() ) };
@@ -113,23 +119,20 @@ public class Test {
                     System.out.println("Sending " + CERT_ANS);
                     os.write(CERT_ANS.generateRawCellPacket());
 
+                    NTorHandshake handshake = new NTorHandshake(relay);
+                    Create2CellPacket handshakePacket = handshake.getClientInitHandshake(GLOBAL_CIRC_ID);
 
-                    Certificate initiatorsIdentityKey = identity;
-                    Certificate responderIdentityKey = CERTS_RESPONSE.getCertificate(CERT_TYPE_2_RSA1024_IDENTITY);
-                    Certificate TLSLinkCertificate = new Certificate(CERT_TYPE_5_TLS_ED25519_LINK, tm.getTLSHandshakeServerCertificate().getEncoded());
-
-                    TorDiffieHellman dh = new TorDiffieHellman();
-
-
-                    //System.out.println(dh.getCommonSecret(wx));
+                    System.out.println("Sending " + handshakePacket);
+                    os.write(handshakePacket.generateRawCellPacket());
 
 
                     break;
                 }
 
                 case NETINFO_COMMAND: {
-                    NETINFO_RESPONSE = new NetInfoCellPacket(circID, command, payload);
+                    NETINFO_RESPONSE = new NetInfoCellPacket(circID, payload);
                     System.out.println("Received " + NETINFO_RESPONSE);
+
                     break;
                 }
 

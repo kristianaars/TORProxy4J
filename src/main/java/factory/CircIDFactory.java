@@ -16,6 +16,7 @@ public class CircIDFactory {
     }
 
     private CircIDFactory() {
+        randomGenerator = new Random();
         occupiedIDs = new ArrayList<>();
         occupiedIDs.add((short) 0);
     }

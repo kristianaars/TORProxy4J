@@ -9,15 +9,15 @@ public class CertCellPacket extends CellPacket {
 
     private Certificate[] certificates;
 
-    public CertCellPacket(short CIRC_ID, byte COMMAND, Certificate[] certificates) {
-        super(CIRC_ID, COMMAND, new byte[0]);
+    public CertCellPacket(short CIRC_ID, Certificate[] certificates) {
+        super(CIRC_ID, CellPacket.CERTS_COMMAND, new byte[0]);
 
         PAYLOAD = CertPayload.createPayloadFrom(certificates);
         this.certificates = certificates;
     }
 
-    public CertCellPacket(short CIRC_ID, byte COMMAND, byte[] payload) {
-        super(CIRC_ID, COMMAND, payload);
+    public CertCellPacket(short CIRC_ID, byte[] payload) {
+        super(CIRC_ID, CellPacket.CERTS_COMMAND, payload);
 
         PAYLOAD = new CertPayload(payload);
         initiateCertificateRead();

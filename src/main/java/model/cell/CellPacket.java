@@ -6,6 +6,12 @@ import java.nio.ByteBuffer;
 
 public class CellPacket {
 
+    public static final byte VERSION_COMMAND = 0x07;
+    public static final byte CERTS_COMMAND = (byte) 0x81;
+    public static final byte AUTH_CHALLENGE_COMMAND = (byte) 0x82;
+    public static final byte NETINFO_COMMAND = (byte) 0x08;
+    public static final byte CREATE2_COMMAND = (byte) 0x0A;
+
     private final static int DEFAULT_HEADER_SIZE = 0x05;
 
     private final short CIRC_ID;

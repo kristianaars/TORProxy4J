@@ -1,27 +1,17 @@
 package utils;
 
-
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.util.encoders.Base64;
-import org.bouncycastle.util.io.pem.PemObjectParser;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
 
-public class CertificateUtils {
+public class CryptoUtils {
 
     /**
      * reads a public key from a file
@@ -52,21 +42,21 @@ public class CertificateUtils {
         }
     }
 
-    public static PublicKey readPublicKey(String cert) {
-        try {
-            PEMParser pemParser = new PEMParser(new StringReader(cert));
-            Object object = pemParser.readObject();
-            SubjectPublicKeyInfo subjectPublicKeyInfo = (SubjectPublicKeyInfo) object;
+    /**
+     * Converts an byte-array to a base64-encoded byte-buffer.
+     *
+     * @param b Byte-array to be converted
+     * @return Base64 encoded byte-buffer
+     */
+    public static byte[] toBase64(byte[] b) {
+        return Base64.encode(b);
+    }
 
-            RSAKeyParameters rsa = (RSAKeyParameters) PublicKeyFactory.createKey(subjectPublicKeyInfo);
+    public static byte[] decodeBase64(String encodedString) {
+        return Base64.decode(encodedString);
+    }
 
-            RSAPublicKeySpec rsaSpec = new RSAPublicKeySpec(rsa.getModulus(), rsa.getExponent());
-            KeyFactory kf = KeyFactory.getInstance("RSA", new BouncyCastleProvider());
-            return kf.generatePublic(rsaSpec);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-
+    public static byte[] decodeBase64(byte[] encodedBuffer) {
+        return Base64.decode(encodedBuffer);
     }
 }
