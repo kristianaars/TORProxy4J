@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 public class SHA256HKDFKeyMaterial {
 
-
     /**
      *   When used in the ntor handshake, the first HASH_LEN bytes form the
      *    forward digest Df; the next HASH_LEN form the backward digest Db; the

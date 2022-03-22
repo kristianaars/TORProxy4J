@@ -67,10 +67,6 @@ public class Test {
         AuthChallengeCellPacket AUTH_CHALLENGE = null;
         CellPacket NETINFO_RESPONSE = null;
 
-
-        final byte CERT_TYPE_2_RSA1024_IDENTITY = 0x02;
-        final byte CERT_TYPE_5_TLS_ED25519_LINK = 0x05;
-
         //final int GLOBAL_CIRC_ID = 0x80000002;
         final int GLOBAL_CIRC_ID = CircIDFactory.getInstance().getCircID();
 
@@ -80,14 +76,10 @@ public class Test {
             if(ACTIVE_TOR_PROTOCOL_VERSION == TOR_PROTOCOL_VERSION_3) {
                 CIRC_ID = ByteUtils.toShort((byte) is.read(), (byte) is.read());
             } else {
-                byte[] circIDB = new byte[]{(byte) is.read(), (byte) is.read(), (byte) is.read(), (byte) is.read()};
-                CIRC_ID = ByteUtils.toInt(circIDB);
-                System.out.println("CIRC_ID: " + CIRC_ID);
+                CIRC_ID = ByteUtils.toInt(new byte[]{(byte) is.read(), (byte) is.read(), (byte) is.read(), (byte) is.read()});
             }
 
             byte command = (byte) is.read();
-
-            System.out.println("Command: " + ByteUtils.toHexString(command));
 
             short length;
             boolean expectFixedPayload = CellPacket.isFixedPacketCell(command);
@@ -102,12 +94,13 @@ public class Test {
             switch (command) {
                 case CellPacket.VERSION_COMMAND: {
                     VERSION_RESPONSE = new VersionCellPacket(CIRC_ID, payload);
+                    System.out.println("Received " + VERSION_RESPONSE);
 
                     if(VERSION_RESPONSE.supportsVersion(TOR_PROTOCOL_VERSION_4)) {
                         ACTIVE_TOR_PROTOCOL_VERSION = TOR_PROTOCOL_VERSION_4;
-                        System.out.println("Changed to Tor-Protocol Version " + TOR_PROTOCOL_VERSION_4);
+                        System.out.println("Switching to Tor-Protocol Version " + TOR_PROTOCOL_VERSION_4);
                     }
-                    System.out.println("Received " + VERSION_RESPONSE);
+
                     break;
                 }
 
@@ -120,7 +113,6 @@ public class Test {
                 case CellPacket.AUTH_CHALLENGE_COMMAND: {
                     AUTH_CHALLENGE = new AuthChallengeCellPacket(CIRC_ID, payload);
                     System.out.println("Received " + AUTH_CHALLENGE);
-
                     break;
                 }
 
@@ -130,14 +122,12 @@ public class Test {
 
                     NetInfoAddress extAddr = new NetInfoAddress((byte) 0x04, remoteAddress.getAddress());
                     NetInfoAddress[] ownAddr = new NetInfoAddress[] { new NetInfoAddress( (byte) 0x04, ownAddress.getAddress() ) };
-                    NetInfo netInfo = new NetInfo((int) (System.currentTimeMillis() / 1000L), extAddr, ownAddr);
-                    NetInfoCellPacket NETINFO_ANS = new NetInfoCellPacket((short) 0x00, netInfo);
+                    NetInfoCellPacket NETINFO_ANS = new NetInfoCellPacket((short) 0x00, new NetInfo((int) (System.currentTimeMillis() / 1000L), extAddr, ownAddr));
 
                     System.out.println("Sending " + NETINFO_ANS);
                     os.write(NETINFO_ANS.generateRawCellPacket());
 
                     Create2CellPacket handshakePacket = handshake.getClientInitHandshake(GLOBAL_CIRC_ID);
-
                     System.out.println("Sending " + handshakePacket);
                     os.write(handshakePacket.generateRawCellPacket());
 
