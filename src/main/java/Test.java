@@ -1,15 +1,11 @@
 import crypto.NTorHandshake;
-import crypto.TorDiffieHellman;
 import exceptions.DescriptorFieldNotFoundException;
 import exceptions.PayloadSizeNotFixedException;
-import factory.CertificateFactory;
 import factory.CircIDFactory;
 import managers.TLSTrustManager;
 import model.*;
-import model.Certificate;
 import model.cell.*;
 import model.payload.Payload;
-import model.relay.RelayDescriptor;
 import model.relay.TorRelay;
 import model.relay.TorRelays;
 import utils.ByteUtils;
@@ -20,10 +16,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.spec.InvalidKeySpecException;
-import java.time.LocalTime;
 import java.util.Arrays;
 
 public class Test {
@@ -34,7 +30,7 @@ public class Test {
         TLSTrustManager tm = new TLSTrustManager();
         ctx.init(null, new TrustManager[]{tm}, null);
 
-        TorRelay relay = TorRelays.RELAYS[3];
+        TorRelay relay = TorRelays.RELAYS[1];
 
         InetAddress remoteAddress = relay.getAddress();
         InetAddress ownAddress = InetAddress.getByName("188.113.68.128");
@@ -62,6 +58,8 @@ public class Test {
 
         InputStream is = socket.getInputStream();
 
+        NTorHandshake handshake = new NTorHandshake(relay);
+
         System.out.println("\nConnected...");
 
         VersionCellPacket VERSION_RESPONSE = null;
@@ -73,7 +71,8 @@ public class Test {
         final byte CERT_TYPE_2_RSA1024_IDENTITY = 0x02;
         final byte CERT_TYPE_5_TLS_ED25519_LINK = 0x05;
 
-        final int GLOBAL_CIRC_ID = 0x80000002;
+        //final int GLOBAL_CIRC_ID = 0x80000002;
+        final int GLOBAL_CIRC_ID = CircIDFactory.getInstance().getCircID();
 
         while (true) {
             int CIRC_ID = 0;
@@ -88,7 +87,7 @@ public class Test {
 
             byte command = (byte) is.read();
 
-            System.out.println("Command: " + ByteUtils.toString(command));
+            System.out.println("Command: " + ByteUtils.toHexString(command));
 
             short length;
             boolean expectFixedPayload = CellPacket.isFixedPacketCell(command);
@@ -137,21 +136,32 @@ public class Test {
                     System.out.println("Sending " + NETINFO_ANS);
                     os.write(NETINFO_ANS.generateRawCellPacket());
 
-
-                    NTorHandshake handshake = new NTorHandshake(relay);
                     Create2CellPacket handshakePacket = handshake.getClientInitHandshake(GLOBAL_CIRC_ID);
 
-                    System.out.println("Sending " + ByteUtils.toString(handshakePacket.generateRawCellPacket()));
-                    byte[] packet = handshakePacket.generateRawCellPacket();
-
-                    os.write(packet);
+                    System.out.println("Sending " + handshakePacket);
+                    os.write(handshakePacket.generateRawCellPacket());
 
                     break;
                 }
 
+                case CellPacket.CREATED2_COMMAND:
+                    Created2CellPacket createdPacket = new Created2CellPacket(CIRC_ID, payload);
+                    System.out.println("Received " + createdPacket);
+
+                    handshake.provideServerHandshakeResponse(createdPacket);
+
+                    break;
+
+                case CellPacket.DESTROY_COMMAND:
+                    DestroyCellPacket destroyCellPacket = new DestroyCellPacket(CIRC_ID, payload);
+                    System.out.println("Received " + destroyCellPacket);
+
+                    break;
+
                 default: {
                     CellPacket packet = new CellPacket(CIRC_ID, command, payload);
                     System.out.println("Received " + packet);
+
                     break;
                 }
             }

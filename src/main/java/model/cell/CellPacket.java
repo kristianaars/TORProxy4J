@@ -76,7 +76,6 @@ public class CellPacket {
                 "CIRC_ID=" + String.format("0x%04X", CIRC_ID) +
                 ", TOTAL_SIZE=" + getExpectedPacketSize() +
                 ", COMMAND=" + String.format("0x%02X", COMMAND) +
-                ", LENGTH=" + PAYLOAD.getLength() +
                 ", PAYLOAD=" + PAYLOAD+
                 '}';
     }

@@ -17,7 +17,7 @@ public class AuthChallenge {
     @Override
     public String toString() {
         return "AuthChallenge{" +
-                "CHALLENGE=" + ByteUtils.toString(CHALLENGE) +
+                "CHALLENGE=" + ByteUtils.toHexString(CHALLENGE) +
                 ", METHODS=" + Arrays.toString(METHODS) +
                 '}';
     }

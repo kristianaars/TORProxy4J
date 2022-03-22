@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
-import java.util.Arrays;
 
 public class RelayDescriptor {
 
@@ -91,8 +90,8 @@ public class RelayDescriptor {
     @Override
     public String toString() {
         return "RelayDescriptor{" +
-                "IDENTITY_FINGERPRINT='" + ByteUtils.toString(IDENTITY_FINGERPRINT) + '\'' +
-                ", NTOR_ONION_KEY='" + ByteUtils.toString(NTOR_ONION_KEY) + '\'' +
+                "IDENTITY_FINGERPRINT='" + ByteUtils.toHexString(IDENTITY_FINGERPRINT) + '\'' +
+                ", NTOR_ONION_KEY='" + ByteUtils.toHexString(NTOR_ONION_KEY) + '\'' +
                 '}';
     }
 }

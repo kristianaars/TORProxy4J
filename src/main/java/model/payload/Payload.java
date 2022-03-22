@@ -21,7 +21,9 @@ public class Payload {
     @Override
     public String toString() {
         return "Payload{" +
-                "payload=" + ByteUtils.toString(payload) +
+                " LENGTH=" + payload.length +
+                ", FIXED_SIZE=" + isFixedSize +
+                //", DATA=" + ByteUtils.toHexString(payload) +
                 '}';
     }
 
@@ -36,4 +38,5 @@ public class Payload {
     public int getLength() {
         return payload.length;
     }
+
 }

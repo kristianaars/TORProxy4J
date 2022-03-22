@@ -16,4 +16,8 @@ public class Create2CellPacket extends CellPacket {
         this.PAYLOAD = new Create2Payload(this.PAYLOAD);
     }
 
+    @Override
+    public String toString() {
+        return "Create2CellPacket{} " + super.toString();
+    }
 }

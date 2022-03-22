@@ -1,5 +1,7 @@
 package utils;
 
+import java.nio.charset.StandardCharsets;
+
 public class ByteUtils {
 
     /**
@@ -27,15 +29,15 @@ public class ByteUtils {
      * @param byteBuffer Array to be represented
      * @return Hexadecimal string-representation of byte-buffer.
      */
-    public static String toString(byte[] byteBuffer) {
+    public static String toHexString(byte[] byteBuffer) {
         StringBuilder p = new StringBuilder();
         p.append("[");
-        for(byte b : byteBuffer) { p.append(toString(b)); }
+        for(byte b : byteBuffer) { p.append(toHexString(b)); }
         p.append("]");
         return p.toString();
     }
 
-    public static String toString(byte b) {
+    public static String toHexString(byte b) {
         return String.format("0x%02X ", b);
     }
 
@@ -74,5 +76,15 @@ public class ByteUtils {
                     + Character.digit(hexSequence.charAt(i+1), 16));
         }
         return data;
+    }
+
+    /**
+     * Returns byte-buffer from string, using default charset UTF-8
+     *
+     * @param s String to convert
+     * @return New byte-buffer with the string values represented.
+     */
+    public static byte[] toBytes(String s) {
+        return s.getBytes(StandardCharsets.UTF_8);
     }
 }
