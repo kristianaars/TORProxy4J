@@ -1,4 +1,4 @@
-package model.relay;
+package connection.relay;
 
 import exceptions.DescriptorFieldNotFoundException;
 import utils.ByteUtils;
@@ -12,7 +12,7 @@ import java.net.URL;
 
 public class RelayDescriptor {
 
-    private final static String AUTHORITY_DESCRIPTOR_URL_PATH = "/tor/server/authority";
+    private final static String AUTHORITY_DESCRIPTOR_URL_PATH = "/tor/server/fp";
     ///tor/server/authority
 
     public final byte[] IDENTITY_FINGERPRINT;
@@ -66,9 +66,14 @@ public class RelayDescriptor {
 
         throw new DescriptorFieldNotFoundException("Unable to find valid descriptor field with header " + HEADER);
     }
-    public static RelayDescriptor getRelayDescriptorFor(String address, int port) throws IOException, DescriptorFieldNotFoundException {
+
+    public static RelayDescriptor getRelayDescriptorFor(String address, String fingerprint) throws IOException, DescriptorFieldNotFoundException {
         try {
-            URL url = new URL("http://" + address + ":" + port + AUTHORITY_DESCRIPTOR_URL_PATH);
+            TorRelay randomDirRelay = RelayDirectory.getInstance().getRandomRelay();
+            String dirAddress = randomDirRelay.getAddressAsString();
+            int dirPort = randomDirRelay.getDirPort();
+
+            URL url = new URL("http://" + dirAddress + ":" + dirPort + AUTHORITY_DESCRIPTOR_URL_PATH + "/" + fingerprint);
             BufferedReader s = new BufferedReader(new InputStreamReader(url.openStream()));
 
             String result = "", input;

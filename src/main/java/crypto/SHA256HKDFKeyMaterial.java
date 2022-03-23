@@ -18,7 +18,11 @@ public class SHA256HKDFKeyMaterial {
 
     private final byte[] DF;
     private final byte[] DF_RV;
+
+    //Forward key
     private final byte[] KF;
+
+    //Backwards key
     private final byte[] KB;
 
     public SHA256HKDFKeyMaterial(byte[] expandedKeyData) {

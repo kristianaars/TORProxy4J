@@ -1,4 +1,4 @@
-package managers;
+package connection;
 
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.Certificate;
@@ -14,7 +14,7 @@ public class TLSTrustManager implements X509TrustManager {
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String s) throws CertificateException {
-        System.out.println("TLS-Certificate to relay: " + chain[chain.length - 1]);
+        //System.out.println("TLS-Certificate to relay: " + chain[chain.length - 1]);
         TLSHandshakeServerCertificate = chain[chain.length - 1];
     }
 

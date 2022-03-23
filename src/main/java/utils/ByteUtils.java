@@ -41,6 +41,10 @@ public class ByteUtils {
         return String.format("0x%02X ", b);
     }
 
+    public static String toHexString(short s) { return String.format("0x%04X ", s); }
+
+    public static String toHexString(int i) { return String.format("0x%02X ", i); }
+
     public static String toCharRepresentation(byte[] b) {
         StringBuilder p = new StringBuilder();
         for(byte by : b) {
@@ -86,5 +90,20 @@ public class ByteUtils {
      */
     public static byte[] toBytes(String s) {
         return s.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Returns the largest number found in the array.
+     *
+     * @param l Array to be searched
+     * @return Largest number in the array
+     */
+    public static short largest(short[] l) {
+        short max = l[0];
+        for(int i = 1; i < l.length;i++) {
+            if(l[i] > max) max = l[i];
+        }
+
+        return max;
     }
 }

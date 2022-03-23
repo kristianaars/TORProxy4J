@@ -1,21 +1,20 @@
 package crypto;
 
+import model.LinkSpecifier;
+import model.LinkSpecifierGenerator;
 import model.cell.Create2CellPacket;
 import model.cell.Created2CellPacket;
+import model.cell.Extend2RelayCell;
 import model.payload.Create2Payload;
-import model.relay.TorRelay;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
-import org.bouncycastle.crypto.params.HKDFParameters;
+import connection.relay.TorRelay;
+import model.payload.Payload;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 import utils.ByteUtils;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 public class NTorHandshake {
-
 
     /**
      *    In this section, define:
@@ -44,6 +43,7 @@ public class NTorHandshake {
      *        x,X = KEYGEN()
      */
 
+    private static final short H_TYPE = 0x0002;
     private static final int HANDSHAKE_SIZE = 84;
     public static final int G_LENGTH = 32;
     public static final int H_LENGTH = 32;
@@ -52,7 +52,6 @@ public class NTorHandshake {
     private static final String t_key = PROTOID + ":key_extract";
     private static final String t_verify = PROTOID + ":verify";
     private static final String m_expand = PROTOID + ":key_expand";
-
 
     private final Curve25519KeyPair keyPair;
     private byte[] handshakeData;
@@ -67,16 +66,49 @@ public class NTorHandshake {
         this.onionRouter = onionRouter;
     }
 
+    public SHA256HKDFKeyMaterial getKeyMaterial() {
+        return keyMaterial;
+    }
+
     private Curve25519KeyPair initiateKeyPair() {
         Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
         return cipher.generateKeyPair();
     }
 
     public Create2CellPacket getClientInitHandshake(int CIRC_ID) {
-        byte[] handshakeData = createClientHandshakeRequest();
-        Create2Payload payload = Create2Payload.generateCreate2Payload(Create2Payload.HTYPE_NTOR, handshakeData);
-
+        Create2Payload payload = new Create2Payload(getOnionSkin());
         return new Create2CellPacket(CIRC_ID, payload);
+    }
+
+
+    public Extend2RelayCell getExtendCell(int CIRC_ID) {
+        LinkSpecifier[] linkSpecifiers = new LinkSpecifier[] {
+                LinkSpecifierGenerator.createIPv4LinkSpecifier(onionRouter.getAddress().getAddress(), (short) onionRouter.getPort()),
+                LinkSpecifierGenerator.createSHA1LinkSpecifier(onionRouter.getDescriptor().IDENTITY_FINGERPRINT)
+        };
+
+        byte[] onionSkin = getOnionSkin();
+
+        return new Extend2RelayCell(CIRC_ID, 0, linkSpecifiers, onionSkin);
+    }
+
+    /**
+     *    A ONION SKIN contains:
+     *
+     *    HTYPE     (Client Handshake Type)     [2 bytes]
+     *    HLEN      (Client Handshake Data Len) [2 bytes]
+     *    HDATA     (Client Handshake Data)     [HLEN bytes]
+     *
+     */
+    public byte[] getOnionSkin() {
+        byte[] HDATA = getClientHandshakeRequestData();
+        short HLEN = (short) HDATA.length;
+        ByteBuffer pumpBuffer = ByteBuffer.allocate(Payload.FIXED_PAYLOAD_SIZE);
+        pumpBuffer.putShort(H_TYPE);
+        pumpBuffer.putShort(HLEN);
+        pumpBuffer.put(HDATA);
+
+        return pumpBuffer.array();
     }
 
     /**
@@ -145,7 +177,7 @@ public class NTorHandshake {
      *
      * @return NTAP Onion Skin
      */
-    private byte[] createClientHandshakeRequest() {
+    private byte[] getClientHandshakeRequestData() {
         byte[] NODE_ID = onionRouter.getDescriptor().IDENTITY_FINGERPRINT;
         byte[] KEY_ID = onionRouter.getDescriptor().NTOR_ONION_KEY;
         byte[] CLIENT_PK = keyPair.getPublicKey();
