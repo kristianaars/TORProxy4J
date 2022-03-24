@@ -21,13 +21,15 @@ public class CircIDFactory {
         occupiedIDs.add((short) 0);
     }
 
-    public short getCircID() {
+    public int getCircID() {
+        return 0x80000008;
+        /*
         short proposedValue = generateRandomShort();
         while (occupiedIDs.contains(proposedValue)) {
             proposedValue = generateRandomShort();
         }
 
-        return proposedValue;
+        return proposedValue;*/
     }
 
     private short generateRandomShort() {

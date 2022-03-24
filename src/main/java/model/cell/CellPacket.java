@@ -53,6 +53,8 @@ public class CellPacket {
         return command == NETINFO_COMMAND || command == CREATE2_COMMAND || command == CREATED2_COMMAND || command == DESTROY_COMMAND;
     }
 
+
+
     @Override
     public String toString() {
         return "CellPacket{" +

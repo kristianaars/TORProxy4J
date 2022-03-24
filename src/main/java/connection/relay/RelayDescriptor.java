@@ -9,8 +9,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
+import java.util.logging.Logger;
 
 public class RelayDescriptor {
+
+    private static final Logger logger = Logger.getLogger("RelayDescriptor");
 
     private final static String AUTHORITY_DESCRIPTOR_URL_PATH = "/tor/server/fp";
     ///tor/server/authority
@@ -73,7 +76,10 @@ public class RelayDescriptor {
             String dirAddress = randomDirRelay.getAddressAsString();
             int dirPort = randomDirRelay.getDirPort();
 
+
+
             URL url = new URL("http://" + dirAddress + ":" + dirPort + AUTHORITY_DESCRIPTOR_URL_PATH + "/" + fingerprint);
+            logger.info("Reading descriptor of " + fingerprint + " from " + url.toExternalForm());
             BufferedReader s = new BufferedReader(new InputStreamReader(url.openStream()));
 
             String result = "", input;

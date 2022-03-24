@@ -33,9 +33,9 @@ public class EntryCircuitNode extends CircuitNode {
             String relayAddress = getRelay().getAddressAsString();
             int relayPort = getRelay().getPort();
 
-            SSLSocket socket = (SSLSocket) ctx.getSocketFactory().createSocket(relayAddress, relayPort);
-
             logger.info("Performing TLS Handshake with " + relayAddress + ":" + relayPort);
+
+            SSLSocket socket = (SSLSocket) ctx.getSocketFactory().createSocket(relayAddress, relayPort);
 
             socket.startHandshake();
 

@@ -17,7 +17,7 @@ public class SHA256HKDFKeyMaterial {
      */
 
     private final byte[] DF;
-    private final byte[] DF_RV;
+    private final byte[] DB;
 
     //Forward key
     private final byte[] KF;
@@ -27,7 +27,7 @@ public class SHA256HKDFKeyMaterial {
 
     public SHA256HKDFKeyMaterial(byte[] expandedKeyData) {
         this.DF = deriveDf(expandedKeyData);
-        this.DF_RV = deriveReverseDf(expandedKeyData);
+        this.DB = deriveDb(expandedKeyData);
         this.KF = deriveKf(expandedKeyData);
         this.KB = deriveKb(expandedKeyData);
     }
@@ -36,14 +36,22 @@ public class SHA256HKDFKeyMaterial {
         return DF;
     }
 
-    public byte[] getDF_RV() {
-        return DF_RV;
+    public byte[] getDB() {
+        return DB;
     }
 
+    /**
+     * Returns the Key for forward encryption
+     * @return Key for forward encryption
+     */
     public byte[] getKF() {
         return KF;
     }
 
+    /**
+     * Returns the Key for backwards decryption
+     * @return Key for backwards decryption
+     */
     public byte[] getKB() {
         return KB;
     }
@@ -52,7 +60,7 @@ public class SHA256HKDFKeyMaterial {
     public String toString() {
         return "SHA256HKDFKeyMaterial{" +
                 "DF=" + ByteUtils.toHexString(DF) +
-                ", DF_RV=" + ByteUtils.toHexString(DF_RV) +
+                ", DB=" + ByteUtils.toHexString(DB) +
                 ", KF=" + ByteUtils.toHexString(KF) +
                 ", KB=" + ByteUtils.toHexString(KB) +
                 '}';
@@ -71,7 +79,7 @@ public class SHA256HKDFKeyMaterial {
     /**
      * ...the next HASH_LEN form the backward digest Db;
      */
-    private byte[] deriveReverseDf(byte[] expandedKeyData) {
+    private byte[] deriveDb(byte[] expandedKeyData) {
         return Arrays.copyOfRange(expandedKeyData,
                 CryptoConstants.HASH_LEN,
                 CryptoConstants.HASH_LEN + CryptoConstants.HASH_LEN

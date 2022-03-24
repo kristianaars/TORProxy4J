@@ -46,6 +46,8 @@ public class CellPacketInputStream {
             return null;
         }
 
+        logger.info("Retrieving payload of cell with command " + command);
+
         //Find length of packet
         short length;
         boolean expectFixedPayload = CellPacket.isFixedPacketCell(command);
@@ -74,6 +76,8 @@ public class CellPacketInputStream {
                 break;
             case CellPacket.DESTROY_COMMAND:
                 packet = new DestroyCellPacket(CIRC_ID, payload);
+                logger.info("Received Destroy Command. Closing connection... Reason: " + ((DestroyCellPacket)packet).getDESTROY_REASON());
+                inputStream.close();
                 break;
             case CellPacket.NETINFO_COMMAND:
                 try {

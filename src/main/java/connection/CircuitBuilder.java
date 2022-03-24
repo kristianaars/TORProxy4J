@@ -2,6 +2,7 @@ package connection;
 
 import connection.relay.TorRelay;
 import crypto.NTorHandshake;
+import exceptions.CouldNotVerifyHandshakeException;
 import exceptions.UnexpectedDestroyException;
 import factory.CircIDFactory;
 import model.NetInfo;
@@ -40,7 +41,7 @@ public class CircuitBuilder {
         CIRC_ID = CircIDFactory.getInstance().getCircID();
     }
 
-    public Circuit buildCircuit() throws IOException, UnexpectedDestroyException {
+    public Circuit buildCircuit() throws IOException, UnexpectedDestroyException, CouldNotVerifyHandshakeException {
         createEntryConnection(entryNode);
 
         for(int i = 1; i < nodes.length; i++) {
@@ -50,7 +51,7 @@ public class CircuitBuilder {
         return new Circuit(entryNode, expandedNodes.toArray(new CircuitNode[0]));
     }
 
-    private void createEntryConnection(EntryCircuitNode entryNode) throws IOException, UnexpectedDestroyException {
+    private void createEntryConnection(EntryCircuitNode entryNode) throws IOException, UnexpectedDestroyException, CouldNotVerifyHandshakeException {
         entryNode.initiateTLSConnection();
 
         NTorHandshake handshake = entryNode.getHandshake();
@@ -115,12 +116,35 @@ public class CircuitBuilder {
 
     }
 
-    private void expandTo(CircuitNode node) {
+    private void expandTo(CircuitNode node) throws IOException, UnexpectedDestroyException {
         CircuitNode originNode = expandedNodes.get(expandedNodes.size() - 1);
-        NTorHandshake handshake = node.getHandshake();
 
-        Extend2RelayCell extCell = handshake.getExtendCell(CIRC_ID);
-        logger.info("Extend cell " + extCell);
+        NTorHandshake originHandshake = originNode.getHandshake();
+        NTorHandshake newHandshake = node.getHandshake();
+
+        Extend2RelayCell extCell = newHandshake.getExtendCell(CIRC_ID);
+
+        sendCellAcrossCircuit(extCell);
+
+        CellPacketInputStream inputStream = entryNode.getInputStream();
+        CellPacket expPacket = inputStream.getPacket();
+
+        if(expPacket.getCOMMAND() == RelayCell.DESTROY_COMMAND) {
+            throw new UnexpectedDestroyException("Received unexpected Destroy-Command when expecting command with value " + RelayCell.RELAY_EARLY);
+        }
+
+        logger.info("Received EXP-Packet " + expPacket);
+    }
+
+    public void sendCellAcrossCircuit(RelayCell cell) throws IOException {
+        for(int i = expandedNodes.size() - 1; i >= 0; i--) {
+            CircuitNode node = expandedNodes.get(i);
+            logger.info("Encrypting cell for node #" + i);
+            node.encryptCell(cell);
+
+        }
+
+        entryNode.getOutputStream().write(cell);
     }
 
     private NetInfoCellPacket getNetInfoAnswer(TorRelay remoteRelay) {

@@ -23,7 +23,6 @@ public class CellPacketOutputStream {
     public void write(CellPacket packet) throws IOException {
         logger.log(Level.INFO, "Sending " + packet);
 
-
         byte[] buffer = generateCellPacketBuffer(packet);
         logger.log(Level.INFO, "Sending buffer " + ByteUtils.toHexString(buffer));
         outputStream.write(buffer);

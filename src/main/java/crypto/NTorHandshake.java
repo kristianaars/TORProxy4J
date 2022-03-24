@@ -1,5 +1,6 @@
 package crypto;
 
+import exceptions.CouldNotVerifyHandshakeException;
 import model.LinkSpecifier;
 import model.LinkSpecifierGenerator;
 import model.cell.Create2CellPacket;
@@ -8,11 +9,23 @@ import model.cell.Extend2RelayCell;
 import model.payload.Create2Payload;
 import connection.relay.TorRelay;
 import model.payload.Payload;
+import model.payload.RelayPayload;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.ec.CustomNamedCurves;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 import utils.ByteUtils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
+import java.security.*;
+import java.security.spec.ECPoint;
+import java.util.Arrays;
+import java.util.ServiceLoader;
 
 public class NTorHandshake {
 
@@ -52,16 +65,16 @@ public class NTorHandshake {
     private static final String t_key = PROTOID + ":key_extract";
     private static final String t_verify = PROTOID + ":verify";
     private static final String m_expand = PROTOID + ":key_expand";
+    private static final String server = "Server";
 
     private final Curve25519KeyPair keyPair;
-    private byte[] handshakeData;
-    private TorRelay onionRouter;
-
-    private SHA256HKDF keyDerivator;
+    private final TorRelay onionRouter;
     private SHA256HKDFKeyMaterial keyMaterial;
+    private EncryptionService encryptionService;
+
+    private Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
 
     public NTorHandshake(TorRelay onionRouter) {
-        this.handshakeData = new byte[HANDSHAKE_SIZE];
         this.keyPair = initiateKeyPair();
         this.onionRouter = onionRouter;
     }
@@ -71,7 +84,6 @@ public class NTorHandshake {
     }
 
     private Curve25519KeyPair initiateKeyPair() {
-        Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
         return cipher.generateKeyPair();
     }
 
@@ -84,12 +96,12 @@ public class NTorHandshake {
     public Extend2RelayCell getExtendCell(int CIRC_ID) {
         LinkSpecifier[] linkSpecifiers = new LinkSpecifier[] {
                 LinkSpecifierGenerator.createIPv4LinkSpecifier(onionRouter.getAddress().getAddress(), (short) onionRouter.getPort()),
-                LinkSpecifierGenerator.createSHA1LinkSpecifier(onionRouter.getDescriptor().IDENTITY_FINGERPRINT)
+                LinkSpecifierGenerator.createSHA1LinkSpecifier(onionRouter.getDescriptor().IDENTITY_FINGERPRINT),
         };
 
         byte[] onionSkin = getOnionSkin();
 
-        return new Extend2RelayCell(CIRC_ID, 0, linkSpecifiers, onionSkin);
+        return new Extend2RelayCell(CIRC_ID, linkSpecifiers, onionSkin);
     }
 
     /**
@@ -103,7 +115,7 @@ public class NTorHandshake {
     public byte[] getOnionSkin() {
         byte[] HDATA = getClientHandshakeRequestData();
         short HLEN = (short) HDATA.length;
-        ByteBuffer pumpBuffer = ByteBuffer.allocate(Payload.FIXED_PAYLOAD_SIZE);
+        ByteBuffer pumpBuffer = ByteBuffer.allocate(HDATA.length + 2 + 2);
         pumpBuffer.putShort(H_TYPE);
         pumpBuffer.putShort(HLEN);
         pumpBuffer.put(HDATA);
@@ -129,10 +141,10 @@ public class NTorHandshake {
      * X: Client Public Key
      * Y: Server public key
      * B: NTor Onion Key
-     * ID: Onion Fingerprint
+     * ID: Fingerprint
      */
-    public void provideServerHandshakeResponse(Created2CellPacket packet) {
-        Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
+    public void provideServerHandshakeResponse(Created2CellPacket packet) throws CouldNotVerifyHandshakeException {
+        //Curve25519 cipher = Curve25519.getInstance(Curve25519.JAVA);
 
         byte[] x = this.keyPair.getPrivateKey();
         byte[] X = this.keyPair.getPublicKey();
@@ -144,21 +156,57 @@ public class NTorHandshake {
         byte[] EXP_Bx = cipher.calculateAgreement(B, x);
 
         //Create secret_input
-        ByteBuffer pumpBuffer = ByteBuffer.allocate(EXP_Bx.length + EXP_Yx.length + ID.length + B.length + X.length + PROTOID.length());
+        ByteBuffer pumpBuffer = ByteBuffer.allocate(EXP_Bx.length + EXP_Yx.length + ID.length + B.length + X.length + Y.length + PROTOID.length());
         pumpBuffer.put(EXP_Yx);
         pumpBuffer.put(EXP_Bx);
         pumpBuffer.put(ID);
         pumpBuffer.put(B);
         pumpBuffer.put(X);
+        pumpBuffer.put(Y);
         pumpBuffer.put(ByteUtils.toBytes(PROTOID));
 
         byte[] secretInput = pumpBuffer.array();
-        System.out.println(ByteUtils.toHexString(secretInput));
 
-        keyDerivator = new SHA256HKDF(secretInput, ByteUtils.toBytes(t_key), ByteUtils.toBytes(m_expand));
+        //VERIFY KEY
+        try {
+            Mac sha256_mac = Mac.getInstance("HmacSHA256");
+            sha256_mac.init(new SecretKeySpec(ByteUtils.toBytes(t_verify), "HmacSHA256"));
+            sha256_mac.update(secretInput);
+            byte[] verify = sha256_mac.doFinal();
+
+            ByteBuffer authPumpBuffer = ByteBuffer.allocate(verify.length + ID.length + B.length + Y.length + X.length + PROTOID.length() + server.length());
+            authPumpBuffer.put(verify);
+            authPumpBuffer.put(ID);
+            authPumpBuffer.put(B);
+            authPumpBuffer.put(Y);
+            authPumpBuffer.put(X);
+            authPumpBuffer.put(ByteUtils.toBytes(PROTOID));
+            authPumpBuffer.put(ByteUtils.toBytes(server));
+            byte[] auth_input = authPumpBuffer.array();
+
+            sha256_mac.init(new SecretKeySpec(ByteUtils.toBytes(t_mac), "HmacSHA256"));
+            sha256_mac.update(auth_input);
+            byte[] H_auth_input = sha256_mac.doFinal();
+            byte[] AUTH = packet.getAuth();
+
+            boolean verified = Arrays.equals(H_auth_input, AUTH);
+
+            if(!verified) {
+                throw new CouldNotVerifyHandshakeException("Handshake data is corrupt or invalid.");
+            }
+        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        SHA256HKDF keyDerivator = new SHA256HKDF(secretInput, ByteUtils.toBytes(t_key), ByteUtils.toBytes(m_expand));
         keyMaterial = keyDerivator.hkdfExpand();
 
-        System.out.println(keyMaterial);
+        initiateEncryptionService();
+    }
+
+    private void initiateEncryptionService() {
+        encryptionService = new EncryptionService(keyMaterial.getKF(), keyMaterial.getKB());
     }
 
     /**
@@ -191,4 +239,25 @@ public class NTorHandshake {
 
         return pumpBuffer.array();
     }
+
+    /**
+     * Encrypts the provided relay payload
+     * @return Encrypted payload
+     */
+    public Payload encryptPayload(Payload payload) {
+        byte[] encryptedPayload = encryptionService.encrypt(payload.getPayload());
+        Payload encryptedPayloadObject = new Payload(encryptedPayload);
+        encryptedPayloadObject.setFixedSize(true);
+
+        return encryptedPayloadObject;
+    }
+
+    /**
+     * Decrypts the provided relay payload
+     * @return
+     */
+    public RelayPayload decryptPayload(RelayPayload payload) {
+        return null;
+    }
+
 }

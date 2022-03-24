@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Random;
 
 
 public class CryptoUtils {
@@ -58,5 +59,17 @@ public class CryptoUtils {
 
     public static byte[] decodeBase64(byte[] encodedBuffer) {
         return Base64.decode(encodedBuffer);
+    }
+
+    /**
+     * Returns a byte buffer with random bytes. Used to create buffers with random padding.
+     *
+     * @param size Size of buffer
+     * @return Buffer with random bytes allocated in all buffer-indexes.
+     */
+    public static byte[] getRandomlyPaddedBuffer(int size) {
+        byte[] buffer = new byte[size];
+        new Random().nextBytes(buffer);
+        return buffer;
     }
 }
