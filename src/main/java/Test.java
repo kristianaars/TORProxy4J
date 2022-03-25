@@ -2,6 +2,8 @@ import connection.Circuit;
 import connection.CircuitBuilder;
 import crypto.EncryptionService;
 import exceptions.CouldNotVerifyHandshakeException;
+import exceptions.NTorHandshakeException;
+import exceptions.TorException;
 import exceptions.UnexpectedDestroyException;
 import connection.relay.TorRelay;
 import connection.relay.RelayDirectory;
@@ -13,7 +15,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class Test {
 
-    public static void main(String[] args) throws UnexpectedDestroyException, IOException, NoSuchAlgorithmException, CouldNotVerifyHandshakeException {
+    public static void main(String[] args) throws TorException, IOException {
         CircuitBuilder builder = new CircuitBuilder(new TorRelay[]{
                 RelayDirectory.getInstance().pickRandomRelay(),
                 RelayDirectory.getInstance().pickRandomRelay(),

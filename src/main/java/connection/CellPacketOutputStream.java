@@ -24,7 +24,7 @@ public class CellPacketOutputStream {
         logger.log(Level.INFO, "Sending " + packet);
 
         byte[] buffer = generateCellPacketBuffer(packet);
-        logger.log(Level.INFO, "Sending buffer " + ByteUtils.toHexString(buffer));
+        //logger.log(Level.INFO, "Sending buffer " + ByteUtils.toHexString(buffer));
         outputStream.write(buffer);
         outputStream.flush();
     }

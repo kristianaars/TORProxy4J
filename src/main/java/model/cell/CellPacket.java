@@ -12,7 +12,7 @@ public class CellPacket {
     public static final byte CREATED2_COMMAND = (byte) 0x0B;
     public static final byte DESTROY_COMMAND = (byte) 0x04;
     public static final byte RELAY_COMMAND = (byte) 0x03;
-    public static final byte RELAY_EARLY = (byte) 0x09;
+    public static final byte RELAY_EARLY_COMMAND = (byte) 0x09;
 
     public final static int FIXED_CELL_PACKET_SIZE = 514;
     public final static int HEADER_SIZE_V3 = 0x05;
@@ -26,6 +26,12 @@ public class CellPacket {
         this.CIRC_ID = CIRC_ID;
         this.COMMAND = COMMAND;
         this.PAYLOAD = new Payload(PAYLOAD);
+    }
+
+    public CellPacket(int CIRC_ID, byte COMMAND, Payload PAYLOAD) {
+        this.CIRC_ID = CIRC_ID;
+        this.COMMAND = COMMAND;
+        this.PAYLOAD = PAYLOAD;
     }
 
     public int getCIRC_ID() {
@@ -50,10 +56,13 @@ public class CellPacket {
     }
 
     public static boolean isFixedPacketCell(byte command) {
-        return command == NETINFO_COMMAND || command == CREATE2_COMMAND || command == CREATED2_COMMAND || command == DESTROY_COMMAND;
+        return command == NETINFO_COMMAND ||
+               command == CREATE2_COMMAND ||
+               command == CREATED2_COMMAND ||
+               command == DESTROY_COMMAND ||
+               command == RELAY_COMMAND ||
+               command == RELAY_EARLY_COMMAND;
     }
-
-
 
     @Override
     public String toString() {

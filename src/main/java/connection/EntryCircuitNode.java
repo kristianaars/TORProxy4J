@@ -20,6 +20,11 @@ public class EntryCircuitNode extends CircuitNode {
     private CellPacketInputStream inputStream;
     private CellPacketOutputStream outputStream;
 
+    /**
+     * Describes if the TOR-Connection is created. This requires a successful NTOR-Handshake.
+     */
+    private boolean isTorConnectionCreated = false;
+
     public EntryCircuitNode(TorRelay relay) {
         super(relay);
     }
@@ -63,5 +68,20 @@ public class EntryCircuitNode extends CircuitNode {
 
     public CellPacketOutputStream getOutputStream() {
         return outputStream;
+    }
+
+    public boolean isTorConnectionCreated() {
+        return isTorConnectionCreated;
+    }
+
+    public void setTorConnectionCreated(boolean torConnectionCreated) {
+        isTorConnectionCreated = torConnectionCreated;
+    }
+
+    @Override
+    public String toString() {
+        return "EntryCircuitNode{" +
+                "isTorConnectionCreated=" + isTorConnectionCreated +
+                "} " + super.toString();
     }
 }

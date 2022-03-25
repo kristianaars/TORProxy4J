@@ -1,18 +1,109 @@
 package connection;
 
-import connection.relay.TorRelay;
+import exceptions.DecryptionException;
+import exceptions.NodeNotConnectedException;
+import exceptions.TorException;
+import model.cell.CellPacket;
+import model.cell.Extended2RelayCell;
+import model.cell.RelayCell;
+import utils.ByteUtils;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Circuit {
 
+    private static final Logger logger =  Logger.getLogger("Circuit");
+
     private int CIRC_ID;
-    private byte TOR_PROTOCOL_VERSION = ConnectionConstants.TOR_PROTOCOL_VERSION_3;
+    private short TOR_PROTOCOL_VERSION = ConnectionConstants.TOR_PROTOCOL_VERSION_3;
 
-    private EntryCircuitNode entryNode;
-    private CircuitNode[] relays;
+    private final ArrayList<CircuitNode> nodes;
 
-    protected Circuit(EntryCircuitNode entryNode, CircuitNode[] relays) {
-        this.relays = relays;
-        this.entryNode = entryNode;
+    protected Circuit(EntryCircuitNode entryNode, int CIRC_ID) {
+        this.CIRC_ID = CIRC_ID;
+        nodes = new ArrayList<>();
+        nodes.add(entryNode);
     }
 
+    public void addNode(CircuitNode node) throws NodeNotConnectedException {
+        if(node.getHandshake().getKeyMaterial() == null) {
+            throw new NodeNotConnectedException("The node with fingerprint " + node.getRelay().getFingerprint() + " was added to a circuit without being extended to.");
+        }
+
+        nodes.add(node);
+        logger.info("Node with fingerprint " + node.getFingerprint() + " was successfully added to the circuit");
+    }
+
+    public EntryCircuitNode getEntryNode() {
+        return (EntryCircuitNode) nodes.get(0);
+    }
+
+    public CellPacket getCell() throws IOException, TorException {
+        CellPacket cell = getEntryNode().getInputStream().getPacket();
+
+        if(cell instanceof RelayCell) {
+            try {
+                return decryptRelayCell((RelayCell) cell);
+            }  catch (DecryptionException e) {
+                throw e;
+            }
+
+        } else {
+            return cell;
+        }
+    }
+
+    public void sendCell(CellPacket cell) throws IOException {
+        if(cell instanceof RelayCell) {
+            if(!(((RelayCell) cell).isEncrypted()) && ((RelayCell) cell).getDIGEST() != 0) {
+                throw new IOException("Cell with digest, should not have it...");
+            }
+
+            getEntryNode().getOutputStream().write(
+                    encryptCellPacket((RelayCell) cell)
+            );
+
+        } else {
+            getEntryNode().getOutputStream().write(cell);
+        }
+    }
+
+    private RelayCell decryptRelayCell(RelayCell relayCell) throws DecryptionException {
+        RelayCell cell = relayCell;
+        for (int i = 0; i < nodes.size(); i++) {
+            cell = nodes.get(i).decryptCell(cell);
+        }
+
+        if(cell.getRECOGNIZED() != 0) {
+            //TODO: Not decrypted correclty
+            throw new DecryptionException("Unable to successfully decrypt onion skins of incoming Relay Cell");
+        }
+
+        //TODO: Create external relay cell parser
+        switch (cell.getRELAY_COMMAND()) {
+            case RelayCell.RELAY_COMMAND_EXTENDED2:
+                return new Extended2RelayCell(cell.getCIRC_ID(), cell.getCOMMAND(), cell.getPayload());
+            default:
+                return cell;
+        }
+    }
+
+    private RelayCell encryptCellPacket(RelayCell relayCell) {
+        RelayCell cell = relayCell;
+        for(int i = nodes.size() - 1; i >= 0; i--) {
+            cell = nodes.get(i).encryptCell(cell);
+        }
+
+        return cell;
+    }
+
+    public void setTorProtocolVersion(short version) {
+        logger.log(Level.INFO, "Setting TOR-Protocol version to " + version);
+        this.TOR_PROTOCOL_VERSION = version;
+        getEntryNode().setTorProtocolVersion(version);
+    }
 }

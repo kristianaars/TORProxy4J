@@ -3,6 +3,7 @@ package crypto;
 import exceptions.CouldNotVerifyHandshakeException;
 import model.LinkSpecifier;
 import model.LinkSpecifierGenerator;
+import model.ServerHandshakeResponse;
 import model.cell.Create2CellPacket;
 import model.cell.Created2CellPacket;
 import model.cell.Extend2RelayCell;
@@ -143,12 +144,12 @@ public class NTorHandshake {
      * B: NTor Onion Key
      * ID: Fingerprint
      */
-    public void provideServerHandshakeResponse(Created2CellPacket packet) throws CouldNotVerifyHandshakeException {
-        //Curve25519 cipher = Curve25519.getInstance(Curve25519.JAVA);
+    public void provideServerHandshakeResponse(ServerHandshakeResponse handshakeResponse) throws CouldNotVerifyHandshakeException {
+        Curve25519 cipher = Curve25519.getInstance(Curve25519.JAVA);
 
         byte[] x = this.keyPair.getPrivateKey();
         byte[] X = this.keyPair.getPublicKey();
-        byte[] Y = packet.getServerPK();
+        byte[] Y = handshakeResponse.getServerPK();
         byte[] B = onionRouter.getDescriptor().NTOR_ONION_KEY;
         byte[] ID = onionRouter.getDescriptor().IDENTITY_FINGERPRINT;
 
@@ -187,7 +188,7 @@ public class NTorHandshake {
             sha256_mac.init(new SecretKeySpec(ByteUtils.toBytes(t_mac), "HmacSHA256"));
             sha256_mac.update(auth_input);
             byte[] H_auth_input = sha256_mac.doFinal();
-            byte[] AUTH = packet.getAuth();
+            byte[] AUTH = handshakeResponse.getAuth();
 
             boolean verified = Arrays.equals(H_auth_input, AUTH);
 
@@ -254,10 +255,20 @@ public class NTorHandshake {
 
     /**
      * Decrypts the provided relay payload
-     * @return
+     * @return Decrypted payload-object
      */
-    public RelayPayload decryptPayload(RelayPayload payload) {
-        return null;
+    public Payload decryptPayload(Payload payload) {
+        byte[] decryptedPayload = encryptionService.decrypt(payload.getPayload());
+        Payload decryptedPayloadObject = new Payload(decryptedPayload);
+        decryptedPayloadObject.setFixedSize(true);
+        return decryptedPayloadObject;
     }
 
+    @Override
+    public String toString() {
+        return "NTorHandshake{" +
+                "keyMaterial=" + keyMaterial +
+                ", encryptionService=" + encryptionService +
+                '}';
+    }
 }

@@ -13,12 +13,14 @@ public class Extend2RelayCell extends RelayEarlyCell {
     private final byte[] handshakeData;
 
     public Extend2RelayCell(int CIRC_ID, LinkSpecifier[] LSPEC, byte[] handshakeData) {
-        super(CIRC_ID, RELAY_EARLY, (short) 0, new RelayPayload(new byte[0]));
+        super(CIRC_ID, RelayCell.RELAY_COMMAND_EXTEND2, (short) 0, new RelayPayload(new byte[0]));
 
         this.LSPEC = LSPEC;
         this.handshakeData = handshakeData;
         this.RELAY_PAYLOAD = Extend2RelayPayload.createRelayData(LSPEC, handshakeData);
-        super.updatePayload();
+
+        this.PAYLOAD = buildCellPacketPayload(this.getRELAY_COMMAND(), this.getRECOGNIZED(), this.getDIGEST(), this.getSTREAM_ID(), RELAY_PAYLOAD);
+        this.PAYLOAD.setFixedSize(true);
     }
 
     @Override

@@ -23,7 +23,7 @@ public class Payload {
         return "Payload{" +
                 " LENGTH=" + payload.length +
                 ", FIXED_SIZE=" + isFixedSize +
-                ", DATA=" + ByteUtils.toHexString(payload) +
+                //", DATA=" + ByteUtils.toHexString(payload) +
                 '}';
     }
 

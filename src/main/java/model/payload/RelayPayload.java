@@ -17,12 +17,13 @@ public class RelayPayload extends Payload {
 
         isFixedSize = true;
         this.DATA_LENGTH = payload.length;
-
         this.payload = padPayload(payload);
     }
 
     public byte[] padPayload(byte[] payload) {
-        byte[] buffer = CryptoUtils.getRandomlyPaddedBuffer(FIXED_PAYLOAD_SIZE);
+        //byte[] buffer = CryptoUtils.getRandomlyPaddedBuffer(FIXED_PAYLOAD_SIZE);
+        byte[] buffer = new byte[FIXED_PAYLOAD_SIZE];
+
         for(int i = 0; i < payload.length; i++) {
             buffer[i] = payload[i];
         }

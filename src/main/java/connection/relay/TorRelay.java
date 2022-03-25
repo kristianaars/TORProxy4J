@@ -62,6 +62,10 @@ public class TorRelay {
         return descriptor;
     }
 
+    public String getFingerprint() {
+        return providedFingerprint;
+    }
+
     public int getDirPort() {
         return dirPort;
     }

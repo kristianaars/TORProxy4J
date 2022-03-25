@@ -1,5 +1,6 @@
 package utils;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public class ByteUtils {
@@ -61,6 +62,10 @@ public class ByteUtils {
             r |= (int)bytes[i] & 0xFF;
         }
         return r;
+    }
+
+    public static byte[] toByteArray(int i) {
+        return ByteBuffer.allocate(4).putInt(i).array();
     }
 
     /**

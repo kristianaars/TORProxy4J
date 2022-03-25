@@ -46,7 +46,7 @@ public class CellPacketInputStream {
             return null;
         }
 
-        logger.info("Retrieving payload of cell with command " + command);
+        //logger.info("Retrieving payload of cell with command " + command);
 
         //Find length of packet
         short length;
@@ -73,6 +73,12 @@ public class CellPacketInputStream {
                 break;
             case CellPacket.CREATED2_COMMAND:
                 packet = new Created2CellPacket(CIRC_ID, payload);
+                break;
+            case CellPacket.RELAY_COMMAND:
+                packet = new RelayCell(CIRC_ID, command, payload);
+                break;
+            case CellPacket.RELAY_EARLY_COMMAND:
+                packet = new RelayEarlyCell(CIRC_ID, payload);
                 break;
             case CellPacket.DESTROY_COMMAND:
                 packet = new DestroyCellPacket(CIRC_ID, payload);

@@ -1,12 +1,11 @@
 package crypto;
 
+import utils.ByteUtils;
+
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.AlgorithmParameters;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 /**
  * The encryption services is a wrapper for AES 128-Bit CTR encryption and decryption.
@@ -14,11 +13,13 @@ import java.security.NoSuchAlgorithmException;
 
 public class EncryptionService {
 
-
     private final SecretKey encryptionKey;
     private final SecretKey decryptionKey;
 
     private static final String ALGORITM = "AES/CTR/NoPadding";
+
+    private final Cipher encryptCipher;
+    private final Cipher decryptCipher;
 
     /**
      * Service-class for encryption used in the Tor-protocol. Uses AES 128-Bit CTR encryption.
@@ -27,14 +28,39 @@ public class EncryptionService {
      * @param decryptionKey Key to be used for decryption
      */
     public EncryptionService(byte[] encryptionKey, byte[] decryptionKey) {
-        this.encryptionKey = new SecretKeySpec(encryptionKey, "AES");
-        this.decryptionKey = new SecretKeySpec(decryptionKey, "AES");
+        this.encryptionKey = new SecretKeySpec(encryptionKey, 0, 16, "AES");
+        this.decryptionKey = new SecretKeySpec(decryptionKey, 0, 16, "AES");
+
+        this.encryptCipher = initEncryptCipher();
+        this.decryptCipher = initDecryptCipher();
     }
 
     private IvParameterSpec generateIV() {
         byte[] iv = new byte[16];
-        for(int i = 0; i < iv.length; i++) { iv[i] = 0; }
+        //All bytes equal zero
         return new IvParameterSpec(iv);
+    }
+
+    private Cipher initEncryptCipher() {
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITM);
+            cipher.init(Cipher.ENCRYPT_MODE, encryptionKey, generateIV());
+            return cipher;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private Cipher initDecryptCipher() {
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITM);
+            cipher.init(Cipher.DECRYPT_MODE, decryptionKey, generateIV());
+            return cipher;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
@@ -43,28 +69,13 @@ public class EncryptionService {
      * @return Encrypted message
      */
     public byte[] encrypt(byte[] message) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITM);
-            cipher.init(Cipher.ENCRYPT_MODE, encryptionKey, generateIV());
-
-            byte[] e = cipher.doFinal(message);
-            return e;
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-            return null;
-        }
+        byte[] res = encryptCipher.update(message);
+        //System.out.println("Result: " + ByteUtils.toHexString(res));
+        return res;
     }
 
     public byte[] decrypt(byte[] encryptedMessage) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITM);
-            cipher.init(Cipher.DECRYPT_MODE, decryptionKey);
-
-            return cipher.doFinal(encryptedMessage);
-
-        } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
-            e.printStackTrace();
-            return null;
-        }
+        byte[] res = decryptCipher.update(encryptedMessage);
+        return res;
     }
 }

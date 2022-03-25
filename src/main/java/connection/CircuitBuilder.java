@@ -2,19 +2,19 @@ package connection;
 
 import connection.relay.TorRelay;
 import crypto.NTorHandshake;
-import exceptions.CouldNotVerifyHandshakeException;
-import exceptions.UnexpectedDestroyException;
+import exceptions.*;
 import factory.CircIDFactory;
 import model.NetInfo;
 import model.NetInfoAddress;
 import model.cell.*;
+import model.payload.Extended2RelayPayload;
+import model.payload.Payload;
 import utils.ByteUtils;
 import utils.NetworkUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CircuitBuilder {
@@ -41,17 +41,27 @@ public class CircuitBuilder {
         CIRC_ID = CircIDFactory.getInstance().getCircID();
     }
 
-    public Circuit buildCircuit() throws IOException, UnexpectedDestroyException, CouldNotVerifyHandshakeException {
-        createEntryConnection(entryNode);
+    public Circuit buildCircuit() throws IOException, TorException {
+        Circuit circuit = new Circuit(entryNode, CIRC_ID);
 
-        for(int i = 1; i < nodes.length; i++) {
-            expandTo(nodes[i]);
+        logger.info("Building circuit " + ByteUtils.toHexString(CIRC_ID) + " with entry-node " + entryNode.getFingerprint() + "...");
+        createEntryConnection(circuit);
+
+        if(entryNode.getHandshake().getKeyMaterial() != null) {
+            entryNode.setTorConnectionCreated(true);
+        } else {
+            throw new NTorHandshakeException("Could not find key-material after handshake with Entry-Node was completed");
         }
 
-        return new Circuit(entryNode, expandedNodes.toArray(new CircuitNode[0]));
+        for(int i = 1; i < nodes.length; i++) {
+            expandTo(nodes[i], circuit);
+        }
+
+        return circuit;
     }
 
-    private void createEntryConnection(EntryCircuitNode entryNode) throws IOException, UnexpectedDestroyException, CouldNotVerifyHandshakeException {
+    private void createEntryConnection(Circuit circuit) throws IOException, TorException {
+        EntryCircuitNode entryNode = circuit.getEntryNode();
         entryNode.initiateTLSConnection();
 
         NTorHandshake handshake = entryNode.getHandshake();
@@ -59,22 +69,24 @@ public class CircuitBuilder {
         CellPacketOutputStream outputStream = entryNode.getOutputStream();
 
         //Send version cell
+        logger.info("Negotiating TOR-Protocol versions...");
         VersionCellPacket VERSION_REQUEST = new VersionCellPacket(0, ConnectionConstants.SUPPORTED_PROTOCOL_VERSIONS);
-        outputStream.write(VERSION_REQUEST);
+        circuit.sendCell(VERSION_REQUEST);
 
         //Receive version cell and agree on version
         VersionCellPacket VERSION_RESPONSE = (VersionCellPacket) inputStream.getPacket();
-        short agreedVersion = VERSION_REQUEST.highestCommonVersion(VERSION_RESPONSE);
-        logger.log(Level.INFO, "Agreed upton TOR protocol-version for CIRC_ID " + ByteUtils.toHexString(CIRC_ID) + " is " + agreedVersion);
-        entryNode.setTorProtocolVersion(agreedVersion);
+
+        //Set TOR-Protocol version to the highest common version-number.
+        circuit.setTorProtocolVersion(VERSION_REQUEST.highestCommonVersion(VERSION_RESPONSE));
 
         //Wait until expected cells are received (Cert, Auth and NetInfo)
         CertCellPacket CERT_CELL_RESPONSE = null;
         AuthChallengeCellPacket AUTH_CELL_RESPONSE = null;
         NetInfoCellPacket NET_INFO_RESPONSE = null;
 
+        logger.info("Waiting for initialization Cells...");
         while (CERT_CELL_RESPONSE == null || AUTH_CELL_RESPONSE == null || NET_INFO_RESPONSE == null) {
-            CellPacket packet = inputStream.getPacket();
+            CellPacket packet = circuit.getCell();
 
             switch (packet.getCOMMAND()) {
                 case CellPacket.CERTS_COMMAND:
@@ -88,63 +100,54 @@ public class CircuitBuilder {
 
                     //Send NetInfo client-answer to server
                     NetInfoCellPacket NET_INFO_ANSWER = getNetInfoAnswer(entryNode.getRelay());
-                    outputStream.write(NET_INFO_ANSWER);
+                    circuit.sendCell(NET_INFO_ANSWER);
                     break;
             }
         }
 
-
-
         //Create and send CREATE-Cell to initiate TOR-Handshake
         Create2CellPacket CREATE_CELL_ANSWER = handshake.getClientInitHandshake(CIRC_ID);
-        outputStream.write(CREATE_CELL_ANSWER);
+        circuit.sendCell(CREATE_CELL_ANSWER);
 
         //Expect a Created cell, if Destroy is received something must have gone wrong...
-        CellPacket packet = inputStream.getPacket();
+        CellPacket createdCell = circuit.getCell();
 
-        switch (packet.getCOMMAND()) {
-            case CellPacket.CREATED2_COMMAND:
-                handshake.provideServerHandshakeResponse((Created2CellPacket) packet);
-                //Handshake is now complete!
-                expandedNodes.add(entryNode);
-                break;
-            case CellPacket.DESTROY_COMMAND:
-                DestroyCellPacket destroyCell = (DestroyCellPacket) packet;
-                //TODO: Close connection
-                throw new UnexpectedDestroyException("Created2 cell was expected, but received destroy-cell with reason " + destroyCell.getDESTROY_REASON());
+        if(createdCell instanceof Created2CellPacket) {
+            handshake.provideServerHandshakeResponse(((Created2CellPacket) createdCell).getHandshakeResponse());
+            //Handshake is now complete!
+            logger.info("Successfully created TOR-Connection to entry node");
+        } else {
+            if(createdCell instanceof DestroyCellPacket) {
+                DestroyCellPacket destroyCell = (DestroyCellPacket) createdCell;
+                throw new UnexpectedDestroyException("Created2 cell was expected, but received DestroyCell with destroy-reason " + destroyCell.getDESTROY_REASON());
+            } else {
+                throw new UnexpectedCellPacketTypeException("Created2 cell was expected, but received cell with command number " + createdCell.getCOMMAND());
+            }
         }
-
     }
 
-    private void expandTo(CircuitNode node) throws IOException, UnexpectedDestroyException {
-        CircuitNode originNode = expandedNodes.get(expandedNodes.size() - 1);
-
-        NTorHandshake originHandshake = originNode.getHandshake();
+    private void expandTo(CircuitNode node, Circuit circuit) throws IOException, TorException {
         NTorHandshake newHandshake = node.getHandshake();
 
         Extend2RelayCell extCell = newHandshake.getExtendCell(CIRC_ID);
+        logger.info("Sending Extendcell " + extCell);
+        circuit.sendCell(extCell);
 
-        sendCellAcrossCircuit(extCell);
+        CellPacket response = circuit.getCell();
 
-        CellPacketInputStream inputStream = entryNode.getInputStream();
-        CellPacket expPacket = inputStream.getPacket();
-
-        if(expPacket.getCOMMAND() == RelayCell.DESTROY_COMMAND) {
-            throw new UnexpectedDestroyException("Received unexpected Destroy-Command when expecting command with value " + RelayCell.RELAY_EARLY);
+        if(!(response instanceof Extended2RelayCell)) {
+            if(response.getCOMMAND() == RelayCell.DESTROY_COMMAND) {
+                throw new UnexpectedDestroyException("Received unexpected Destroy-Command when expecting command with value " + RelayCell.RELAY_EARLY_COMMAND);
+            } else {
+                throw new UnexpectedCellPacketTypeException("Received unexpected CellPacket of type " + response.getClass().getName() + " when expecting a Extended2RelayCell");
+            }
         }
 
-        logger.info("Received EXP-Packet " + expPacket);
-    }
+        Extended2RelayCell extended2Response = (Extended2RelayCell) response;
+        newHandshake.provideServerHandshakeResponse(extended2Response.getHandshakeResponse());
 
-    public void sendCellAcrossCircuit(RelayCell cell) throws IOException {
-        for(int i = expandedNodes.size() - 1; i >= 0; i--) {
-            CircuitNode node = expandedNodes.get(i);
-            logger.info("Encrypting cell for node #" + i);
-            node.encryptCell(cell);
 
-        }
-
-        entryNode.getOutputStream().write(cell);
+        circuit.addNode(node);
     }
 
     private NetInfoCellPacket getNetInfoAnswer(TorRelay remoteRelay) {
