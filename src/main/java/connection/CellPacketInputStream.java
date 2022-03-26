@@ -1,7 +1,9 @@
 package connection;
 
 import exceptions.PayloadSizeNotFixedException;
-import model.cell.*;
+import model.cells.*;
+import model.cells.relaycells.RelayCell;
+import model.cells.relaycells.RelayEarlyCell;
 import model.payload.Payload;
 import utils.ByteUtils;
 

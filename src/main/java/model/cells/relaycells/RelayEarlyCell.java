@@ -1,6 +1,7 @@
-package model.cell;
+package model.cells.relaycells;
 
-import model.payload.RelayPayload;
+import model.cells.CellPacket;
+import model.payload.relaypayload.RelayPayload;
 
 public class RelayEarlyCell extends RelayCell {
 

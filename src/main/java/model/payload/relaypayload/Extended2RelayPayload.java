@@ -1,7 +1,6 @@
-package model.payload;
+package model.payload.relaypayload;
 
 import crypto.NTorHandshake;
-import model.ServerHandshakeResponse;
 
 import java.util.Arrays;
 
@@ -11,7 +10,7 @@ public class Extended2RelayPayload extends RelayPayload {
     private final static int HLEN_LENGTH = 2;
 
     public Extended2RelayPayload(RelayPayload payload) {
-        super(payload.payload);
+        super(payload.getPayload());
     }
 
     public byte[] retrieveServerPK() {

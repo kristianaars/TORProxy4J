@@ -6,30 +6,25 @@ import exceptions.*;
 import factory.CircIDFactory;
 import model.NetInfo;
 import model.NetInfoAddress;
-import model.cell.*;
-import model.payload.Extended2RelayPayload;
-import model.payload.Payload;
+import model.cells.*;
+import model.cells.relaycells.Extend2RelayCell;
+import model.cells.relaycells.Extended2RelayCell;
+import model.cells.relaycells.RelayCell;
 import utils.ByteUtils;
 import utils.NetworkUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 public class CircuitBuilder {
 
     private static final Logger logger = Logger.getLogger("CircuitBuilder");
 
-    private List<CircuitNode> expandedNodes;
-
-    private CircuitNode[] nodes;
-    private EntryCircuitNode entryNode;
-    private int CIRC_ID = 0;
+    private final CircuitNode[] nodes;
+    private final EntryCircuitNode entryNode;
 
     public CircuitBuilder(TorRelay[] relays) {
         this.nodes = new CircuitNode[relays.length];
-        this.expandedNodes = new ArrayList<>();
 
         int i = 0;
         for (TorRelay tr : relays) {
@@ -38,10 +33,10 @@ public class CircuitBuilder {
         }
 
         entryNode = (EntryCircuitNode) nodes[0];
-        CIRC_ID = CircIDFactory.getInstance().getCircID();
     }
 
     public Circuit buildCircuit() throws IOException, TorException {
+        int CIRC_ID = CircIDFactory.getInstance().generateCircID();
         Circuit circuit = new Circuit(entryNode, CIRC_ID);
 
         logger.info("Building circuit " + ByteUtils.toHexString(CIRC_ID) + " with entry-node " + entryNode.getFingerprint() + "...");
@@ -56,6 +51,8 @@ public class CircuitBuilder {
         for(int i = 1; i < nodes.length; i++) {
             expandTo(nodes[i], circuit);
         }
+
+        circuit.startPacketListenerLoop();
 
         return circuit;
     }
@@ -106,7 +103,7 @@ public class CircuitBuilder {
         }
 
         //Create and send CREATE-Cell to initiate TOR-Handshake
-        Create2CellPacket CREATE_CELL_ANSWER = handshake.getClientInitHandshake(CIRC_ID);
+        Create2CellPacket CREATE_CELL_ANSWER = handshake.getClientInitHandshake(circuit.getCircID());
         circuit.sendCell(CREATE_CELL_ANSWER);
 
         //Expect a Created cell, if Destroy is received something must have gone wrong...
@@ -129,7 +126,7 @@ public class CircuitBuilder {
     private void expandTo(CircuitNode node, Circuit circuit) throws IOException, TorException {
         NTorHandshake newHandshake = node.getHandshake();
 
-        Extend2RelayCell extCell = newHandshake.getExtendCell(CIRC_ID);
+        Extend2RelayCell extCell = newHandshake.getExtendCell(circuit.getCircID());
         logger.info("Sending Extendcell " + extCell);
         circuit.sendCell(extCell);
 

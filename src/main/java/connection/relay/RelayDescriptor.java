@@ -72,7 +72,7 @@ public class RelayDescriptor {
 
     public static RelayDescriptor getRelayDescriptorFor(String address, String fingerprint) throws IOException, DescriptorFieldNotFoundException {
         try {
-            TorRelay randomDirRelay = RelayDirectory.getInstance().getRandomRelay();
+            TorRelay randomDirRelay = RelayDirectory.getInstance().pickRandomDirectoryRelay();
             String dirAddress = randomDirRelay.getAddressAsString();
             int dirPort = randomDirRelay.getDirPort();
 

@@ -1,4 +1,4 @@
-package model.cell;
+package model.cells;
 
 import model.payload.DestroyPayload;
 

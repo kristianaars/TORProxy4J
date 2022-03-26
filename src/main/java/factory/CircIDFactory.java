@@ -1,14 +1,8 @@
 package factory;
 
-import java.util.ArrayList;
-import java.util.Random;
-
-public class CircIDFactory {
+public class CircIDFactory extends IDFactory<Integer> {
 
     private static CircIDFactory defaultInstance;
-
-    private ArrayList<Integer> occupiedIDs;
-    private Random randomGenerator;
 
     public static CircIDFactory getInstance() {
         if(defaultInstance == null) defaultInstance = new CircIDFactory();
@@ -16,12 +10,11 @@ public class CircIDFactory {
     }
 
     private CircIDFactory() {
-        randomGenerator = new Random();
-        occupiedIDs = new ArrayList<>();
+        super();
         occupiedIDs.add(0);
     }
 
-    public int getCircID() {
+    public int generateCircID() {
         int proposedValue = 0x80000000 + generateRandomShort();
         while (occupiedIDs.contains(proposedValue)) {
             proposedValue = 0x80000000 + generateRandomShort();
@@ -30,8 +23,5 @@ public class CircIDFactory {
         return proposedValue;
     }
 
-    private short generateRandomShort() {
-        return  (short) (randomGenerator.nextInt(Short.MAX_VALUE));
-    }
 }
 

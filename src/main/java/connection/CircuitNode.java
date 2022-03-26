@@ -2,11 +2,10 @@ package connection;
 
 import connection.relay.TorRelay;
 import crypto.NTorHandshake;
+import crypto.RelayDigest;
 import exceptions.DecryptionException;
-import model.cell.RelayCell;
+import model.cells.relaycells.RelayCell;
 import model.payload.Payload;
-import model.payload.RelayPayload;
-import utils.ByteUtils;
 
 public class CircuitNode {
 
@@ -27,31 +26,21 @@ public class CircuitNode {
     }
 
     public RelayCell encryptCell(RelayCell cell) {
-        if(cell.getDIGEST() == 0 && !cell.isEncrypted()) {
-            cell.calculateAndSetDigestValue(handshake.getKeyMaterial().getDF());
-        }
-
         Payload encryptedPayload = handshake.encryptPayload(cell.getPayload());
         return new RelayCell(cell.getCIRC_ID(), cell.getCOMMAND(), encryptedPayload);
     }
 
     public RelayCell decryptCell(RelayCell relayCell) throws DecryptionException {
         Payload decryptedPayload = handshake.decryptPayload(relayCell.getPayload());
+        return new RelayCell(relayCell.getCIRC_ID(), relayCell.getCOMMAND(), decryptedPayload);
+    }
 
-        RelayCell decryptedCell = new RelayCell(relayCell.getCIRC_ID(), relayCell.getCOMMAND(), decryptedPayload);
+    public RelayDigest getFwDigest() {
+        return handshake.getFwDigest();
+    }
 
-        if(!decryptedCell.isEncrypted()) {
-            //Verify
-            int verifyDigestValue = decryptedCell.getDIGEST();
-            decryptedCell.setDigestValue(0);
-            decryptedCell.calculateAndSetDigestValue(handshake.getKeyMaterial().getDB());
-
-            if(decryptedCell.getDIGEST() != verifyDigestValue) {
-                throw new DecryptionException("Unabel to verify Digest-value of unencrypted cell");
-            }
-        }
-
-        return decryptedCell;
+    public RelayDigest getBwDigest() {
+        return handshake.getBwDigest();
     }
 
     public String getFingerprint() {

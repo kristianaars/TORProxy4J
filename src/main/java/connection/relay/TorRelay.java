@@ -9,23 +9,16 @@ public class TorRelay {
     private final int torPort;
     private final int dirPort;
 
+    private final boolean SUITABLE_ENTRY_NODE;
+    private final boolean SUPPORTS_EXIT;
+    private final boolean IS_DIRECTORY_RELAY;
+    private boolean IS_ONLINE;
+
     private final String providedFingerprint;
 
     private RelayDescriptor descriptor;
 
-    public TorRelay(String address, int port, String fingerprint)   {
-        try {
-            this.address = InetAddress.getByName(address);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        this.providedFingerprint = fingerprint;
-        this.torPort = port;
-        this.dirPort = 80;
-    }
-
-    public TorRelay(String address, int port, int dirPort, String fingerprint)   {
+    public TorRelay(String address, int port, int dirPort, String fingerprint, boolean suitableEntryNode, boolean supportsExit) {
         try {
             this.address = InetAddress.getByName(address);
         } catch (IOException e) {
@@ -35,6 +28,24 @@ public class TorRelay {
         this.providedFingerprint = fingerprint;
         this.torPort = port;
         this.dirPort = dirPort;
+        this.SUITABLE_ENTRY_NODE = suitableEntryNode;
+        this.SUPPORTS_EXIT = supportsExit;
+
+        if(dirPort <= 0) {
+            IS_DIRECTORY_RELAY = false;
+        } else { IS_DIRECTORY_RELAY = true; }
+    }
+
+    public boolean isSuitableEntryNode() {
+        return SUITABLE_ENTRY_NODE;
+    }
+
+    public boolean supportsExit() {
+        return SUPPORTS_EXIT;
+    }
+
+    public boolean isDirectoryNode() {
+        return IS_DIRECTORY_RELAY;
     }
 
     public InetAddress getAddress() {

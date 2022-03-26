@@ -1,7 +1,6 @@
 package connection;
 
-import model.cell.CellPacket;
-import utils.ByteUtils;
+import model.cells.CellPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,7 +20,7 @@ public class CellPacketOutputStream {
     }
 
     public void write(CellPacket packet) throws IOException {
-        logger.log(Level.INFO, "Sending " + packet);
+        //logger.log(Level.INFO, "Sending " + packet);
 
         byte[] buffer = generateCellPacketBuffer(packet);
         //logger.log(Level.INFO, "Sending buffer " + ByteUtils.toHexString(buffer));

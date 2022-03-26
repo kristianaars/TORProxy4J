@@ -4,18 +4,11 @@ import exceptions.CouldNotVerifyHandshakeException;
 import model.LinkSpecifier;
 import model.LinkSpecifierGenerator;
 import model.ServerHandshakeResponse;
-import model.cell.Create2CellPacket;
-import model.cell.Created2CellPacket;
-import model.cell.Extend2RelayCell;
+import model.cells.Create2CellPacket;
+import model.cells.relaycells.Extend2RelayCell;
 import model.payload.Create2Payload;
 import connection.relay.TorRelay;
 import model.payload.Payload;
-import model.payload.RelayPayload;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.ec.CustomNamedCurves;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 import utils.ByteUtils;
@@ -24,9 +17,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.*;
-import java.security.spec.ECPoint;
 import java.util.Arrays;
-import java.util.ServiceLoader;
 
 public class NTorHandshake {
 
@@ -70,8 +61,12 @@ public class NTorHandshake {
 
     private final Curve25519KeyPair keyPair;
     private final TorRelay onionRouter;
+
     private SHA256HKDFKeyMaterial keyMaterial;
     private EncryptionService encryptionService;
+    private RelayDigest fwDigest;
+    private RelayDigest bwDigest;
+
 
     private Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
 
@@ -92,7 +87,6 @@ public class NTorHandshake {
         Create2Payload payload = new Create2Payload(getOnionSkin());
         return new Create2CellPacket(CIRC_ID, payload);
     }
-
 
     public Extend2RelayCell getExtendCell(int CIRC_ID) {
         LinkSpecifier[] linkSpecifiers = new LinkSpecifier[] {
@@ -204,10 +198,16 @@ public class NTorHandshake {
         keyMaterial = keyDerivator.hkdfExpand();
 
         initiateEncryptionService();
+        initiateRelayDigest();
     }
 
     private void initiateEncryptionService() {
         encryptionService = new EncryptionService(keyMaterial.getKF(), keyMaterial.getKB());
+    }
+
+    private void initiateRelayDigest() {
+        fwDigest = new RelayDigest(keyMaterial.getDF());
+        bwDigest = new RelayDigest(keyMaterial.getDB());
     }
 
     /**
@@ -262,6 +262,14 @@ public class NTorHandshake {
         Payload decryptedPayloadObject = new Payload(decryptedPayload);
         decryptedPayloadObject.setFixedSize(true);
         return decryptedPayloadObject;
+    }
+
+    public RelayDigest getFwDigest() {
+        return fwDigest;
+    }
+
+    public RelayDigest getBwDigest() {
+        return bwDigest;
     }
 
     @Override

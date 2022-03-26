@@ -1,9 +1,7 @@
-package model.cell;
+package model.cells;
 
 import model.ServerHandshakeResponse;
 import model.payload.Created2Payload;
-import model.payload.Extended2RelayPayload;
-import utils.ByteUtils;
 
 public class Created2CellPacket extends CellPacket {
 

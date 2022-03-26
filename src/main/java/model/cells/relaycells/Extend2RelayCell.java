@@ -1,8 +1,8 @@
-package model.cell;
+package model.cells.relaycells;
 
 import model.LinkSpecifier;
-import model.payload.Extend2RelayPayload;
-import model.payload.RelayPayload;
+import model.payload.relaypayload.Extend2RelayPayload;
+import model.payload.relaypayload.RelayPayload;
 import utils.ByteUtils;
 
 import java.util.Arrays;

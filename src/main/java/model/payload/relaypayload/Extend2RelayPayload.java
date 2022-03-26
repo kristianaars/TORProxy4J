@@ -1,7 +1,6 @@
-package model.payload;
+package model.payload.relaypayload;
 
 import model.LinkSpecifier;
-import utils.ByteUtils;
 
 import java.nio.ByteBuffer;
 

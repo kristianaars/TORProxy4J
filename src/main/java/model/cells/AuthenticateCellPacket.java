@@ -1,4 +1,4 @@
-package model.cell;
+package model.cells;
 
 public class AuthenticateCellPacket extends CellPacket {
 

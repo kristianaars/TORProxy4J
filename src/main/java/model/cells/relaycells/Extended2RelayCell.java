@@ -1,11 +1,8 @@
-package model.cell;
+package model.cells.relaycells;
 
 import model.ServerHandshakeResponse;
-import model.payload.Extended2RelayPayload;
+import model.payload.relaypayload.Extended2RelayPayload;
 import model.payload.Payload;
-import utils.ByteUtils;
-
-import java.util.Arrays;
 
 public class Extended2RelayCell extends RelayCell {
 
