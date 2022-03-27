@@ -4,6 +4,8 @@ import model.cells.relaycells.RelayCell;
 import model.payload.Payload;
 import utils.CryptoUtils;
 
+import java.util.Arrays;
+
 public class RelayPayload extends Payload {
 
     public static final int FIXED_PAYLOAD_SIZE = Payload.FIXED_PAYLOAD_SIZE - RelayCell.RELAY_HEADER_SIZE;

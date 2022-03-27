@@ -59,7 +59,6 @@ public class LinkSpecifier {
     public String toString() {
         return "LinkSpecifier{" +
                 "LSTYPE=" + LSTYPE +
-                ", LSPEC=" + ByteUtils.toHexString(LSPEC) +
                 '}';
     }
 }

@@ -27,7 +27,7 @@ public class Extend2RelayCell extends RelayEarlyCell {
     public String toString() {
         return "Extend2RelayCell{" +
                 "LSPEC=" + Arrays.toString(LSPEC) +
-                ", handshakeData=" + ByteUtils.toHexString(handshakeData) +
+                ", handshakeDataLength=" + handshakeData.length +
                 "} " + super.toString();
     }
 }

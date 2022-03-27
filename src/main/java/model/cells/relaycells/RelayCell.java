@@ -55,6 +55,7 @@ public class RelayCell extends CellPacket {
     private final short RECOGNIZED;
     private final short STREAM_ID;
     private int DIGEST;
+    private final short LENGTH;
 
     public RelayCell(int CIRC_ID, byte COMMAND, byte[] PAYLOAD) {
         super(CIRC_ID, COMMAND, PAYLOAD);
@@ -63,6 +64,7 @@ public class RelayCell extends CellPacket {
         this.RECOGNIZED = ByteUtils.toShort(PAYLOAD[1], PAYLOAD[2]);;
         this.STREAM_ID = ByteUtils.toShort(PAYLOAD[3], PAYLOAD[4]);;
         this.DIGEST = ByteUtils.toInt(new byte[] { PAYLOAD[5], PAYLOAD[6], PAYLOAD[7], PAYLOAD[8]});;
+        this.LENGTH = ByteUtils.toShort(PAYLOAD[9], PAYLOAD[10]);
 
         this.RELAY_PAYLOAD = retrieveRelayPayload(super.PAYLOAD);
     }
@@ -74,6 +76,7 @@ public class RelayCell extends CellPacket {
         this.RECOGNIZED = ByteUtils.toShort(PAYLOAD.getPayload()[1], PAYLOAD.getPayload()[2]);;
         this.STREAM_ID = ByteUtils.toShort(PAYLOAD.getPayload()[3], PAYLOAD.getPayload()[4]);;
         this.DIGEST = ByteUtils.toInt(new byte[] { PAYLOAD.getPayload()[5], PAYLOAD.getPayload()[6], PAYLOAD.getPayload()[7], PAYLOAD.getPayload()[8]});;
+        this.LENGTH = ByteUtils.toShort(PAYLOAD.getPayload()[9], PAYLOAD.getPayload()[10]);
 
         this.RELAY_PAYLOAD = retrieveRelayPayload(super.PAYLOAD);
     }
@@ -86,6 +89,7 @@ public class RelayCell extends CellPacket {
         this.DIGEST = 0;
         this.STREAM_ID = STREAM_ID;
         this.RELAY_PAYLOAD = RELAY_PAYLOAD;
+        this.LENGTH = (short) RELAY_PAYLOAD.DATA_LENGTH;
 
         this.PAYLOAD = buildCellPacketPayload(RELAY_COMMAND, RECOGNIZED, DIGEST, STREAM_ID, RELAY_PAYLOAD);
         this.PAYLOAD.setFixedSize(true);
@@ -99,6 +103,7 @@ public class RelayCell extends CellPacket {
         this.DIGEST = 0;
         this.STREAM_ID = STREAM_ID;
         this.RELAY_PAYLOAD = RELAY_PAYLOAD;
+        this.LENGTH = (short) RELAY_PAYLOAD.DATA_LENGTH;
 
         this.PAYLOAD = buildCellPacketPayload(RELAY_COMMAND, RECOGNIZED, DIGEST, STREAM_ID, RELAY_PAYLOAD);
         this.PAYLOAD.setFixedSize(true);
@@ -178,15 +183,26 @@ public class RelayCell extends CellPacket {
         return DIGEST;
     }
 
+    public short getLength() {
+        return LENGTH;
+    }
+
     @Override
     public String toString() {
-        return "RelayCell{" +
-                "IS_ENCRYPTED=" + isEncrypted() +
-                ", RELAY_COMMAND=" + RELAY_COMMAND +
-                ", RECOGNIZED=" + RECOGNIZED +
-                ", STREAM_ID=" + STREAM_ID +
-                ", DIGEST=" + DIGEST +
-                ", RELAY_PAYLOAD=" + RELAY_PAYLOAD +
-                "} " + super.toString();
+        StringBuilder b = new StringBuilder();
+        b.append("RelayCell{" +
+                "CIRC_ID=" + String.format("0x%04X", this.getCIRC_ID()) +
+                ", IS_ENCRYPTED=" + isEncrypted());
+
+        if(!isEncrypted()) {
+            b.append(", RELAY_COMMAND=" + RELAY_COMMAND +
+                    ", RECOGNIZED=" + RECOGNIZED +
+                    ", STREAM_ID=" + STREAM_ID +
+                    ", DIGEST=" + DIGEST);
+        }
+
+        b.append("} ");
+        return b.toString();
     }
+
 }

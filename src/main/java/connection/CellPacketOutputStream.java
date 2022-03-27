@@ -11,7 +11,8 @@ import java.util.logging.Logger;
 public class CellPacketOutputStream {
 
     private final Logger logger = Logger.getLogger("CellPacketOutputStream");
-    private OutputStream outputStream;
+    private final OutputStream outputStream;
+    private boolean isClosed = false;
 
     private short TOR_PROTOCOL_VERSION = ConnectionConstants.TOR_PROTOCOL_VERSION_3;
 
@@ -20,6 +21,10 @@ public class CellPacketOutputStream {
     }
 
     public void write(CellPacket packet) throws IOException {
+        if(isClosed) {
+            throw new IOException("OutputStream is closed");
+        }
+
         //logger.log(Level.INFO, "Sending " + packet);
 
         byte[] buffer = generateCellPacketBuffer(packet);
@@ -67,5 +72,10 @@ public class CellPacketOutputStream {
 
     public void setTorProtocolVersion(short version) {
         this.TOR_PROTOCOL_VERSION = version;
+    }
+
+    public void close() throws IOException {
+        isClosed = true;
+        outputStream.close();
     }
 }

@@ -48,7 +48,7 @@ public class TorStreamRouter {
         short streamID = packet.getSTREAM_ID();
 
         if(streamID == 0) {
-            logger.info("Unahndeled global stream-packet received " + packet);
+            logger.info("Unhandled global stream-packet received " + packet);
             return;
         }
 
@@ -61,12 +61,16 @@ public class TorStreamRouter {
         stream.postCell(packet);
     }
 
-    public void sendCell(RelayCell sendCell) {
-        try {
-            circuit.sendCell(sendCell);
-        } catch (IOException e) {
-            //TODO Better error handling
-            e.printStackTrace();
+    public void sendCell(RelayCell sendCell) throws IOException {
+        circuit.sendCell(sendCell);
+    }
+
+    public void closeAllStreams() throws IOException {
+        for(TorStream ts : worker.getActiveJobs()) {
+            ts.close();
         }
+
+        //Wait for all streams to close
+        worker.join();
     }
 }

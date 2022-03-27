@@ -51,7 +51,6 @@ public class CircuitNode {
     public String toString() {
         return "CircuitNode{" +
                 "relay=" + relay +
-                ", handshake=" + handshake +
                 '}';
     }
 }

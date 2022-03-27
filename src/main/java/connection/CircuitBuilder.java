@@ -19,11 +19,16 @@ import java.util.logging.Logger;
 public class CircuitBuilder {
 
     private static final Logger logger = Logger.getLogger("CircuitBuilder");
+    private static final int MAX_RELAY_COUNT = 8;
 
     private final CircuitNode[] nodes;
     private final EntryCircuitNode entryNode;
 
-    public CircuitBuilder(TorRelay[] relays) {
+    public CircuitBuilder(TorRelay[] relays) throws TorException {
+        if(relays.length > MAX_RELAY_COUNT) {
+            throw new RelayCountException("Max relay-count is " + 8);
+        }
+
         this.nodes = new CircuitNode[relays.length];
 
         int i = 0;

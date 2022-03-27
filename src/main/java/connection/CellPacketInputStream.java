@@ -7,6 +7,7 @@ import model.cells.relaycells.RelayEarlyCell;
 import model.payload.Payload;
 import utils.ByteUtils;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
@@ -15,6 +16,8 @@ import java.util.logging.Logger;
 public class CellPacketInputStream {
 
     private final Logger logger = Logger.getLogger("CellPacketInputStream");
+    private boolean isClosed = false;
+
 
     private InputStream inputStream;
     private short TOR_PROTOCOL_VERSION = ConnectionConstants.TOR_PROTOCOL_VERSION_3;
@@ -33,18 +36,33 @@ public class CellPacketInputStream {
      * @return Data from inputstream in CellPacket format
      */
     public CellPacket getPacket() throws IOException {
-        byte[] CIRC_ID_v1 = new byte[] { (byte) inputStream.read(), (byte) inputStream.read() };
-
-        int CIRC_ID = ByteUtils.toShort(CIRC_ID_v1[0], CIRC_ID_v1[1]);
-        if(TOR_PROTOCOL_VERSION == ConnectionConstants.TOR_PROTOCOL_VERSION_4) {
-            //Tor version of 4 or above uses 4 bytes to represent CIRC_ID
-            CIRC_ID = ByteUtils.toInt(new byte[]{CIRC_ID_v1[0], CIRC_ID_v1[1], (byte) inputStream.read(), (byte) inputStream.read()});
+        if(isClosed) {
+            throw new IOException("InputStream is closed");
         }
+
+        int CIRC_ID;
+        try {
+            byte[] CIRC_ID_v1 = new byte[] { (byte) inputStream.read(), (byte) inputStream.read() };
+
+            CIRC_ID = ByteUtils.toShort(CIRC_ID_v1[0], CIRC_ID_v1[1]);
+            if(TOR_PROTOCOL_VERSION == ConnectionConstants.TOR_PROTOCOL_VERSION_4) {
+                //Tor version of 4 or above uses 4 bytes to represent CIRC_ID
+                CIRC_ID = ByteUtils.toInt(new byte[]{CIRC_ID_v1[0], CIRC_ID_v1[1], (byte) inputStream.read(), (byte) inputStream.read()});
+            }
+        } catch (SSLException e) {
+            if(isClosed) {
+                return null;
+            } else {
+                throw e;
+            }
+        }
+
 
         byte command = (byte) inputStream.read();
         if(command == -1) {
-            logger.log(Level.WARNING, "Inputstream was unexpectedly closed.");
+            logger.log(Level.INFO, "Inputstream was closed.");
             //Connection is closed
+            isClosed = true;
             return null;
         }
 
@@ -102,5 +120,10 @@ public class CellPacketInputStream {
 
         logger.log(Level.INFO, "Received: " + packet);
         return packet;
+    }
+
+    public void close() throws IOException {
+        isClosed = true;
+        inputStream.close();
     }
 }

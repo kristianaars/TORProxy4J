@@ -84,4 +84,10 @@ public class EntryCircuitNode extends CircuitNode {
                 "isTorConnectionCreated=" + isTorConnectionCreated +
                 "} " + super.toString();
     }
+
+    public void close() throws IOException {
+        inputStream.close();
+        outputStream.close();
+        connectionSocket.close();
+    }
 }

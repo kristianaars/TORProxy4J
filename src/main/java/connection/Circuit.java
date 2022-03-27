@@ -1,18 +1,18 @@
 package connection;
 
+import connection.relay.TorRelay;
 import exceptions.DecryptionException;
 import exceptions.NodeNotConnectedException;
 import exceptions.StreamIDNotFoundException;
 import exceptions.TorException;
 import model.cells.CellPacket;
-import model.cells.relaycells.ConnectedRelayCell;
-import model.cells.relaycells.Extended2RelayCell;
-import model.cells.relaycells.RelayCell;
+import model.cells.relaycells.*;
 import utils.ByteUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,6 +66,7 @@ public class Circuit {
             try {
                 return decryptRelayCell((RelayCell) cell);
             }  catch (DecryptionException e) {
+                this.close();
                 throw e;
             }
 
@@ -119,19 +120,21 @@ public class Circuit {
         }
 
         if(cell.getRECOGNIZED() != 0) {
-            //TODO: Not decrypted correclty
-            System.out.println(cell);
-            throw new DecryptionException("Unable to successfully decrypt onion skins of incoming Relay Cell");
+            throw new DecryptionException("Unable to decrypt onion skins of incoming Relay Cell");
         } else if(!verifyCellDigest(node, cell)) {
             throw new DecryptionException("Digest of decrypted cell could not be correctly verified.");
         }
 
         //TODO: Create external relay cell parser
         switch (cell.getRELAY_COMMAND()) {
+            case RelayCell.RELAY_COMMAND_DATA:
+                return new DataRelayCell(cell.getCIRC_ID(), cell.getCOMMAND(), cell.getPayload());
             case RelayCell.RELAY_COMMAND_EXTENDED2:
                 return new Extended2RelayCell(cell.getCIRC_ID(), cell.getCOMMAND(), cell.getPayload());
             case RelayCell.RELAY_COMMAND_CONNECTED:
                 return new ConnectedRelayCell(cell.getCIRC_ID(), cell.getCOMMAND(), cell.getPayload());
+            case RelayCell.RELAY_COMMAND_END:
+                return new EndRelayCell(cell.getCIRC_ID(), cell.getRELAY_COMMAND(), cell.getPayload());
             default:
                 return cell;
         }
@@ -150,7 +153,6 @@ public class Circuit {
 
         for(int i = nodes.size() - 1; i >= 0; i--) {
             cell = nodes.get(i).encryptCell(cell);
-            System.out.println("Encrypt count: " + (++hops));
         }
 
         return cell;
@@ -162,7 +164,7 @@ public class Circuit {
         getEntryNode().setTorProtocolVersion(version);
     }
 
-    public synchronized void startPacketListenerLoop() {
+    public void startPacketListenerLoop() {
         new Thread(() -> {
             isRunning = true;
             while (isRunning) {
@@ -177,7 +179,6 @@ public class Circuit {
 
                 if(packet instanceof RelayCell) {
                     try {
-                        System.out.println("Routing " + packet);
                         streamRouter.routeCellPacket((RelayCell) packet);
                     } catch (StreamIDNotFoundException e) {
                         e.printStackTrace();
@@ -185,10 +186,38 @@ public class Circuit {
                         break;
                     }
                 } else {
-                    System.out.println("Unhandled packet " + packet);
+                    if(packet==null && !isRunning) {
+                        break;
+                    }
+
+                    logger.log(Level.WARNING, "Received cell packet with no handle-plan " + packet);
                 }
             }
         }).start();
 
+    }
+
+    public void close() throws IOException {
+        logger.info("Closing circuit wiht CircID " + getCircID());
+        isRunning = false;
+        streamRouter.closeAllStreams();
+        getEntryNode().close();
+    }
+
+    public int getRelayCount() {
+        return nodes.size();
+    }
+
+    public String getRelayInfo() {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < nodes.size(); i++) {
+            if(i == 0) b.append("Entry node: ");
+            else if(i == nodes.size() - 1) b.append("Exit node: ");
+            else b.append("Relay node: ");
+
+            b.append(nodes.get(i).getRelay().toString() + "\n");
+        }
+
+        return b.toString();
     }
 }

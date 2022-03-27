@@ -10,7 +10,7 @@ public class RelayDirectory {
     public static RelayDirectory instance;
 
     private final ArrayList<TorRelay> RELAYS = new ArrayList<>(Arrays.asList(
-            new TorRelay("128.31.0.34", 9101, 9131, "9695DFC35FFEB861329B9F1AB04C46397020CE31", true, false),
+            //new TorRelay("128.31.0.34", 9101, 9131, "9695DFC35FFEB861329B9F1AB04C46397020CE31", true, false),
             new TorRelay("85.25.185.17", 9001, 80, "F7B8A4B5F16ECDF6CA626F96F4E3C219D1A664EC", true, false),
             new TorRelay("185.72.244.37", 443, 80,"ECFDEA48C8A9F45A7241AEDA3C386F4D82F89689", true, false),
             new TorRelay("62.210.137.212", 443, 80,"F813C2EC410101E363AAF0C08D8C4B14EA614564", true, false),

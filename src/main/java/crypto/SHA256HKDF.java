@@ -6,17 +6,9 @@ import org.bouncycastle.crypto.params.HKDFParameters;
 
 public class SHA256HKDF {
 
-    private final byte[] ikm;
-    private final byte[] salt;
-    private final byte[] info;
-
     private final HKDFBytesGenerator generator;
 
     public SHA256HKDF(byte[] ikm, byte[] salt, byte[] info) {
-        this.ikm = ikm;
-        this.salt = salt;
-        this.info = info;
-
         generator = new HKDFBytesGenerator(new SHA256Digest());
         generator.init(new HKDFParameters(ikm, salt, info));
     }

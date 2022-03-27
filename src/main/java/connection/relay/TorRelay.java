@@ -84,9 +84,9 @@ public class TorRelay {
     @Override
     public String toString() {
         return "TorRelay{" +
-                "address=" + address +
-                ", torPort=" + torPort +
-                ", descriptor=" + descriptor +
+                "Address=" + address +
+                ", TorPort=" + torPort +
+                ", Fingerprint=" + providedFingerprint +
                 '}';
     }
 }

@@ -9,13 +9,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TorStreamWorker {
 
-        private ReentrantLock availableJobsLock;
-        private Condition availableJobs;
-        private PriorityQueue<Job> availableJobsList;
+        private final ReentrantLock availableJobsLock;
+        private final Condition availableJobs;
+        private final PriorityQueue<Job> availableJobsList;
 
-        private ReentrantLock activeJobsLock;
-        private ArrayBlockingQueue<Thread> activeJobs;
-        private Condition activeJobsQueueFull;
+        private final ReentrantLock activeJobsLock;
+        private final ArrayBlockingQueue<TorStream> activeJobs;
+        private final Condition activeJobsQueueFull;
 
         private boolean isRunning = false;
 
@@ -65,7 +65,7 @@ public class TorStreamWorker {
                     }
 
                     // Adding new job to active jobs-list.
-                    addJobToQueue(availableJobsList.poll().runnable);
+                    addJobToQueue(availableJobsList.poll().stream);
                     availableJobs.signalAll();
                 }
             });
@@ -75,12 +75,12 @@ public class TorStreamWorker {
          * Adds job to active jobs list, if there is space left.
          * @param job
          */
-        private void addJobToQueue(Runnable job) {
+        private void addJobToQueue(TorStream job) {
             // Get lock for job
             activeJobsLock.lock();
 
-            Thread jobThread = new Thread(job);
-            while(!activeJobs.offer(jobThread)) {
+            //Thread jobThread = new Thread(job);
+            while(!activeJobs.offer(job)) {
                 try {
                     activeJobsQueueFull.await();
                 } catch (InterruptedException e) {
@@ -90,13 +90,14 @@ public class TorStreamWorker {
 
             // Creates separate thread to follow the thread state, and remove it from active jobs once completed.
             Thread waitThread = new Thread(() -> {
+                Thread jobThread = new Thread(job);
                 jobThread.start();
 
                 try {
                     jobThread.join();
 
                     activeJobsLock.lock();
-                    activeJobs.remove(jobThread);
+                    activeJobs.remove(job);
                     activeJobsQueueFull.signalAll();
                     activeJobsLock.unlock();
 
@@ -110,13 +111,20 @@ public class TorStreamWorker {
             activeJobsLock.unlock();
         }
 
-        /**
+        public TorStream[] getActiveJobs() {
+            activeJobsLock.lock();
+            TorStream[] a = activeJobs.toArray(new TorStream[0]);
+            activeJobsLock.unlock();
+            return a;
+        }
+
+    /**
          * Adds runnable code to job-queue
-         * @param code Code to run
+         * @param stream Stream to run
          * @param waitTime Time in milliseconds to wait for job to start.
          */
-        public void post(Runnable code, long waitTime) {
-            Job job = new Job(code, System.currentTimeMillis() + waitTime);
+        public void post(TorStream stream, long waitTime) {
+            Job job = new Job(stream, System.currentTimeMillis() + waitTime);
 
             availableJobsLock.lock();
             availableJobsList.add(job);
@@ -124,8 +132,8 @@ public class TorStreamWorker {
             availableJobsLock.unlock();
         }
 
-        public void post(Runnable job) {
-            post(job, 0);
+        public void post(TorStream stream) {
+            post(stream, 0);
         }
 
         public void join() {
@@ -158,16 +166,17 @@ public class TorStreamWorker {
 
     }
 
+
     /**
      * Data structure for jobs with a start time.
      */
     class Job implements Comparable {
 
-        Runnable runnable;
+        TorStream stream;
         long startTime;
 
-        public Job(Runnable runnable, long startTime) {
-            this.runnable = runnable;
+        public Job(TorStream torStream, long startTime) {
+            this.stream = torStream;
             this.startTime = startTime;
         }
 
