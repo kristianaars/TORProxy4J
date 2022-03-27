@@ -23,7 +23,7 @@ public class Payload {
         return "Payload{" +
                 " LENGTH=" + payload.length +
                 ", FIXED_SIZE=" + isFixedSize +
-                //", DATA=" + ByteUtils.toHexString(payload) +
+                ", DATA=" + ByteUtils.toHexString(payload) +
                 '}';
     }
 
@@ -41,5 +41,23 @@ public class Payload {
 
     public void setFixedSize(boolean b) {
         isFixedSize = b;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Payload payload1 = (Payload) o;
+
+        if (isFixedSize != payload1.isFixedSize) return false;
+        return Arrays.equals(payload, payload1.payload);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (isFixedSize ? 1 : 0);
+        result = 31 * result + Arrays.hashCode(payload);
+        return result;
     }
 }

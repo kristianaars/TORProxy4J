@@ -39,7 +39,7 @@ public class ByteUtils {
     }
 
     public static String toHexString(byte b) {
-        return String.format("0x%02X ", b);
+        return String.format("(byte) 0x%02X,  ", b);
     }
 
     public static String toHexString(short s) { return String.format("0x%04X ", s); }

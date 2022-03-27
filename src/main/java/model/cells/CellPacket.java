@@ -2,6 +2,8 @@ package model.cells;
 
 import model.payload.Payload;
 
+import java.util.Objects;
+
 public class CellPacket {
 
     public static final byte VERSION_COMMAND = 0x07;
@@ -70,7 +72,29 @@ public class CellPacket {
                 "CIRC_ID=" + String.format("0x%04X", CIRC_ID) +
                 ", TOTAL_SIZE=" + getExpectedPacketSize() +
                 ", COMMAND=" + String.format("0x%02X", COMMAND) +
+                //", PAYLOAD=" + PAYLOAD +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CellPacket packet = (CellPacket) o;
+
+        if (CIRC_ID != packet.CIRC_ID) return false;
+        if (COMMAND != packet.COMMAND) return false;
+        return Objects.equals(PAYLOAD, packet.PAYLOAD);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = CIRC_ID;
+        result = 31 * result + (int) COMMAND;
+        result = 31 * result + (PAYLOAD != null ? PAYLOAD.hashCode() : 0);
+        return result;
+    }
+
 }
 

@@ -2,7 +2,10 @@ package model;
 
 import utils.ByteUtils;
 
-public class NetInfoAddress {
+import java.util.Arrays;
+import java.util.Objects;
+
+public class NetInfoAddress  {
 
     public static final byte TYPE_IPV4 = 0x04;
     public static final byte TYPE_IPV6 = 0x06;
@@ -51,4 +54,13 @@ public class NetInfoAddress {
                 ", ADDRESS=" + getAddressAsString() +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NetInfoAddress that = (NetInfoAddress) o;
+        return TYPE == that.TYPE && Arrays.equals(ADDRESS_VALUE, that.ADDRESS_VALUE);
+    }
+
 }

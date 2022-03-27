@@ -1,6 +1,7 @@
 package model;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class NetInfo {
 
@@ -33,6 +34,28 @@ public class NetInfo {
                 ", OTHER_ADDRESS=" + OTHER_ADDRESS +
                 ", MY_ADDRESSES=" + Arrays.toString(MY_ADDRESSES) +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NetInfo netInfo = (NetInfo) o;
+
+        if (TIME != netInfo.TIME) return false;
+        if (!Objects.equals(OTHER_ADDRESS, netInfo.OTHER_ADDRESS))
+            return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(MY_ADDRESSES, netInfo.MY_ADDRESSES);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = TIME;
+        result = 31 * result + (OTHER_ADDRESS != null ? OTHER_ADDRESS.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(MY_ADDRESSES);
+        return result;
     }
 }
 
