@@ -105,7 +105,15 @@ public class TorSocket extends Socket {
         circuit.close();
     }
 
+    public boolean isConnected() {
+        return torStream.isConnected();
+    }
+
     public Circuit getTorCircuit() {
         return circuit;
+    }
+
+    public boolean waitForConnection() {
+        return torStream.waitForConnection();
     }
 }

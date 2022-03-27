@@ -8,10 +8,8 @@ import utils.BlockingBuffer;
 import utils.ByteUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
@@ -27,6 +25,10 @@ public class TorStream implements Runnable {
     private final TorInputStream inputStream;
     private final TorOutputStream outputStream;
 
+    private boolean isConnected = false;
+    private ReentrantLock isConnectedLock;
+    private Condition isConnectedCond;
+
     private boolean isRunning = true;
     private ReentrantLock isRunningLock;
 
@@ -40,6 +42,8 @@ public class TorStream implements Runnable {
         this.outputStream = new TorOutputStream(this);
 
         this.isRunningLock = new ReentrantLock();
+        this.isConnectedLock = new ReentrantLock();
+        this.isConnectedCond = isConnectedLock.newCondition();
     }
 
     public void beginRelayConnection() throws IOException, TorException {
@@ -50,7 +54,6 @@ public class TorStream implements Runnable {
 
     protected void sendData(byte[] b) throws IOException {
         DataRelayCell c = DataRelayCell.createFrom(b, router.getCircID(), STREAM_ID);
-        System.out.println(ByteUtils.toHexString(c.getData()));
         router.sendCell(c);
     }
 
@@ -82,6 +85,10 @@ public class TorStream implements Runnable {
             CellPacket rec = getCell();
             if (rec instanceof ConnectedRelayCell) {
                 logger.info("Successfully connected to " + address + " with streamID " + ByteUtils.toHexString(STREAM_ID));
+                isConnectedLock.lock();
+                isConnected = true;
+                isConnectedCond.signalAll();
+                isConnectedLock.unlock();
                 //Connection successful
             } else if (rec instanceof DataRelayCell) {
                 inputStream.post(((DataRelayCell) rec).getData());
@@ -131,4 +138,27 @@ public class TorStream implements Runnable {
         isRunningLock.unlock();
         return ret;
     }
+
+    public boolean isConnected() {
+        isConnectedLock.lock();
+        boolean ret = isConnected;
+        isConnectedLock.unlock();
+        return ret;
+    }
+
+    public boolean waitForConnection() {
+        isConnectedLock.lock();
+        while (!isConnected) {
+            try {
+                isConnectedCond.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        isConnectedLock.unlock();
+
+        return true;
+    }
+
 }
